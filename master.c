@@ -30,6 +30,8 @@ int  inizializzazione_valori()
 	fscanf(masterbook_init,"%d",&SO_MIN_TRANS_PROC_NSEC);
 	fscanf(masterbook_init,"%d",&SO_MAX_TRANS_PROC_NSEC);
 	fscanf(masterbook_init,"%d",&SO_SIM_SEC);
+
+    fclose(masterbook_init);
 }
 
 int main()
