@@ -1,14 +1,17 @@
 #define _GNU_SOURCE
 #include "master.h"
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <errno.h>	
-#include <time.h>	
+
+void my_handler(int signum)
+{
+    switch(signum){
+    
+        case SIGALRM:
+            break;
+
+        case SIGUSR1:
+            break;
+    }
+}
 
 int  inizializzazione_valori()
 {
@@ -36,7 +39,38 @@ int  inizializzazione_valori()
 
 int main()
 {
+    int utenti, nodi;
+    struct sigaction sa;
     inizializzazione_valori();
-    printf("%i\n",SO_USERS_NUM);
+    bzero(&sa, sizeof(sa));
+    sa.sa_handler=my_handler;
+    sigaction(SIGALRM,&sa,NULL);
+    sigaction(SIGUSR1,&sa,NULL);
+
+    /*
+     * eseguo fork per create i processi utente
+     */
+    for(utenti=1; utenti<=SO_USERS_NUM;utenti++){
+        if(!fork()){
+            printf("Utente #%d\n",utenti);
+            exit(0);
+        }
+    }
+    
+    /*
+     * eseguo fork per create i processi nodo
+     */
+    for(nodi=1; nodi<=SO_NODES_NUM;nodi++){
+        if(!fork()){
+            printf("Nodo #%d\n",nodi);
+            exit(0);
+        }
+    }
+
+    while(wait(NULL)!= -1){
+        /*
+         * attendo la terminazione di tutti i figli
+         */
+    }
     return 0;
 }

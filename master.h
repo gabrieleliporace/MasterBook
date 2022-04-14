@@ -3,6 +3,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/types.h>
+#include <signal.h>
+#include <errno.h>	
+#include <time.h>	
 
 /* definizione di macro*/
 #define SO_BLOCK_SIZE 10
@@ -16,4 +24,6 @@ int SO_MIN_TRANS_PROC_NSEC,SO_MAX_TRANS_PROC_NSEC,SO_SIM_SEC;
 /*definizione funzioni*/
 
 int inizializzazione_valori(); /*Legge i valori dal file init e li assegna*/
+
+
 #endif
