@@ -6,6 +6,7 @@ void my_handler(int signum)
     switch(signum){
     
         case SIGALRM:
+            i=0;
             break;
 
         case SIGUSR1:
@@ -46,6 +47,7 @@ int main()
     sa.sa_handler=my_handler;
     sigaction(SIGALRM,&sa,NULL);
     sigaction(SIGUSR1,&sa,NULL);
+    alarm(SO_SIM_SEC);
 
     /*
      * eseguo fork per create i processi utente
@@ -67,10 +69,12 @@ int main()
         }
     }
 
-    while(wait(NULL)!= -1){
-        /*
-         * attendo la terminazione di tutti i figli
-         */
+    while(i){
+        /*while(wait(NULL)!= -1){
+             *
+             * attendo la terminazione di tutti i figli
+             * 
+        }*/
     }
     return 0;
 }
