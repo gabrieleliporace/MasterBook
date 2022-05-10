@@ -1,14 +1,5 @@
 #define _GNU_SOURCE
 #include "master.h"
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <errno.h>	
-#include <time.h>	
 
 int  inizializzazione_valori()
 {
@@ -34,9 +25,29 @@ int  inizializzazione_valori()
     fclose(masterbook_init);
 }
 
-int main()
-{
-    inizializzazione_valori();
-    printf("%i\n",SO_USERS_NUM);
+int main(int argc, char *argv[])
+{ 
+	int utenti,nodi;
+
+	/*Creazione processi utente*/
+    for(utenti=0;utenti<=20;utenti++){
+        if (fork()==0){
+	    
+		exit(0);
+		}
+	}
+	for(utenti=0;utenti<=20;utenti++)
+		wait(NULL);
+
+	/*creazione processi nodo*/
+	for(nodi=1;nodi<=10;nodi++){
+        if (fork()==0){
+	    
+		exit(0);
+		}
+	}
+	for(nodi=1;nodi<=20;nodi++)
+		wait(NULL);
+
     return 0;
 }
