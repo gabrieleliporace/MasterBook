@@ -1,4 +1,4 @@
-CFLAGS= -std=c89 -pedantic
+CFLAGS= -std=c89 -pedantic -g -O0
 
 master: master.c master.h
 	gcc $(CFLAGS) master.c -o masterbook
@@ -6,16 +6,16 @@ master: master.c master.h
 transazioni: transazioni.c
 	gcc -c $(CFLAGS) transazioni.c -o test/transazioni.o
 
-main: ./test/main.c ./test/transazioni.o
-	gcc $(CFLAGS) ./test/main.c ./test/transazioni.o -o test/main
+main: ./test/test-trans-main.c ./test/transazioni.o
+	gcc $(CFLAGS) ./test/test-trans-main.c ./test/transazioni.o -o test/trans-main
 
-sender: ./test/main.c ./test/transazioni.o
-	gcc $(CFLAGS) -D SENDER ./test/main.c ./test/transazioni.o -o test/sender
+sender: ./test/test-trans-main.c ./test/transazioni.o
+	gcc $(CFLAGS) -D SENDER ./test/test-trans-main.c ./test/transazioni.o -o test/trans-sender
 
 all: master
 
 clean:
-	rm -f *.o masterbook ./test/main ./test/*.o ./test/sender *~
+	rm -f *.o masterbook ./test/trans-main ./test/*.o ./test/trans-sender *~
 
 run: all
 	./masterbook
