@@ -4,7 +4,6 @@
 /*Librerie*/
 #define _GNU_SOURCE 
 #include <stdio.h> 
-#include "master.h"
 #include <string.h> /*Manipolazione stringhe*/
 #include <stdlib.h> /*Conversione da numeri a stringhe e viceversa, anche generatori casuali*/
 #include <sys/types.h> 

@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 			 #endif*/
              Bill = 100;
              valore = val_transazione(Bill,1);
-			 printf("il valore della transazione e' %d/n",valore);
+			 printf("il valore della transazione e' %d\n",valore);
 
 			 exit(0);
 			 break;
