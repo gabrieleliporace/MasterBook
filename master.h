@@ -1,9 +1,6 @@
 #ifndef _MASTER_H
 #define _MASTER_H
 
-#include "utenti.h"
-#include "nodi.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

@@ -6,6 +6,9 @@ master: master.c master.h
 utenti: utenti.c utenti.h
     gcc $(GFLAGS) utenti.c -o 
 
+bilancio: master.c master.o
+    gcc $(GFLAGS) -D master.c master.o  -o test-bilancio
+
 all: master
 
 clean:

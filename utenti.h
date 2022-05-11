@@ -1,8 +1,6 @@
 #ifndef _UTENTI_H
 #define _UTENTI_H
 
-#define VT = 1
-
 /*Librerie*/
 #define _GNU_SOURCE 
 #include <stdio.h> 
@@ -18,6 +16,8 @@
 #include <signal.h>/*Gestione dei segnali fra processi*/
 
 /*Definizione metodi*/
+long bilancio();
+int val_transazione(long Bill,int reward);
 
 
 #endif 

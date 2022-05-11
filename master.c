@@ -1,5 +1,7 @@
 #define _GNU_SOURCE
 #include "master.h"
+#include "utenti.h"
+#include "nodi.h"
 
 int  inizializzazione_valori()
 {
@@ -27,27 +29,71 @@ int  inizializzazione_valori()
 
 int main(int argc, char *argv[])
 { 
-	int utenti,nodi;
+	int utenti,nodi,valore;
+	long Bill;
+	pid_t * array_utenti,pid_user; /*Tipo integer e rappresenta l'id del processo*/
+	pid_t * array_nodi,pid_nod;
+	struct sigaction sa; /*Gestione dei segnali*/
+	inizializzazione_valori(); /*Richiamo la funzione per le variabili globali*/
+	printf("my pid: %d\n",getpid());
+	alarm(SO_SIM_SEC);
 
-	/*Creazione processi utente*/
-    for(utenti=0;utenti<=20;utenti++){
-        if (fork()==0){
-	    
-		exit(0);
+	/*
+	Dichiarazione array per PID utenti e PID nodi
+	*/
+
+	array_utenti=malloc(SO_USERS_NUM*sizeof(*array_utenti));
+    array_nodi=malloc(SO_NODES_NUM*sizeof(*array_nodi));
+
+	/*
+	Creo con fork() i processi utente
+	*/
+
+	for(utenti=1;utenti<=SO_USERS_NUM;utenti++){
+		switch (pid_user=fork())
+		{
+		case -1:
+		     exit(EXIT_FAILURE);
+	    case 0:
+		     free(array_utenti);/*La funzione free() dealloca il bloccco di memoria preallocato dalla malloc*/
+			 
+			 /*#ifdef BILL
+		     Bill = bilancio(0,2);
+			 #else
+			 Bill = bilancio(0,1);
+			 #endif*/
+             Bill = 100;
+             valore = val_transazione(Bill,1);
+			 printf("il valore della transazione e' %d/n",valore);
+
+			 exit(0);
+			 break;
+		
+		default:
+		     array_utenti[utenti]=pid_user; /*inserisce nell'array utenti il pid del processo figlio*/
+			break;
 		}
 	}
-	for(utenti=0;utenti<=20;utenti++)
-		wait(NULL);
 
-	/*creazione processi nodo*/
-	for(nodi=1;nodi<=10;nodi++){
-        if (fork()==0){
-	    
-		exit(0);
+	/*
+	creo i processi nodo con fork()
+	*/
+    for(nodi = 1; nodi<=SO_NODES_NUM;nodi++){
+		switch (pid_nod=fork())
+		{
+		case -1:
+		    exit(EXIT_FAILURE);
+	    case 0:
+		    free(array_nodi);
+			/*body*/
+			exit(0);
+			break;
+		
+		default:
+		    array_nodi[nodi]=pid_nod;
+			break;
 		}
 	}
-	for(nodi=1;nodi<=20;nodi++)
-		wait(NULL);
-
-    return 0;
+	
+	return 0;
 }
