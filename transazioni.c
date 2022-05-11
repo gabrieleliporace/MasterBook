@@ -170,7 +170,6 @@ long get_quantity(pid_t miopid,char * transaction)
         last=sep_it+1;
     }
 
-    printf("last: %ld\n",atol(last));
     i=get_sender(trans);
 
     if(i==miopid){
