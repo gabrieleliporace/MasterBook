@@ -29,7 +29,8 @@ int  inizializzazione_valori()
 
 int main(int argc, char *argv[])
 { 
-	int utenti,nodi,valore;
+	int utenti,nodi,bilancio,creo_transazione,count,status,t_attesa;
+	char * id_transazione;
 	long Bill;
 	pid_t * array_utenti,pid_user; /*Tipo integer e rappresenta l'id del processo*/
 	pid_t * array_nodi,pid_nod;
@@ -53,24 +54,25 @@ int main(int argc, char *argv[])
 		switch (pid_user=fork())
 		{
 		case -1:
-		     exit(EXIT_FAILURE);
-	    case 0:
-		     free(array_utenti);/*La funzione free() dealloca il bloccco di memoria preallocato dalla malloc*/
-			 
-			 /*#ifdef BILL
-		     Bill = bilancio(0,2);
-			 #else
-			 Bill = bilancio(0,1);
-			 #endif*/
-             Bill = 100;
-             valore = val_transazione(Bill,1);
-			 printf("il valore della transazione e' %d\n",valore);
-
-			 exit(0);
-			 break;
+		    exit(EXIT_FAILURE);
+	    case 0: 
+		 	/*La funzione free() dealloca il bloccco di memoria preallocato dalla malloc*/
+		    free(array_utenti);
+			/*calcolo l'attesa*/
+			t_attesa = get_attesa(SO_MAX_TRANS_GEN_NSEC,SO_MIN_TRANS_GEN_NSEC);
+			/*calcolo il bilancio*/
+			bilancio = get_balance(SO_BUDGET_INIT); 
+			/*creo l'id della transazione*/
+			id_transazione = id(array_utenti,pid_user);
+			/*creo la transazione*/
+			creo_transazione = all_utenti(SO_REWARD,bilancio,id_transazione);
+			printf("l'id della transazione e' %hhn \n",id_transazione);
+			usleep(t_attesa);
+			exit(0);
+			break;
 		
 		default:
-		     array_utenti[utenti]=pid_user; /*inserisce nell'array utenti il pid del processo figlio*/
+		    array_utenti[utenti]=pid_user; /*inserisce nell'array utenti il pid del processo figlio*/
 			break;
 		}
 	}
@@ -94,6 +96,33 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+	while(i){
+
+        /* verifico che i pid che mi ritornino siano quelli utente,
+         * cosi' quando a zero termino
+         */
+
+        for(count=1; count<SO_USERS_NUM;count++){
+            while(waitpid(array_utenti[count],&status,WUNTRACED | WCONTINUED)!= -1){
+                 /*
+                 * attendo la terminazione di tutti i processi utente
+                 */ 
+
+                /*controllo causa uscita e riduco di uno gli utenti attivi*/
+                if(WIFEXITED(status)){
+                    utenti--;
+                }
+                if(WIFSIGNALED(status)){
+                    utenti--;
+                }   
+                printf("utenti rimasti: %d\n", utenti);
+
+                /*alzo un sigalrm che setta i a 0*/
+                raise(SIGALRM);
+            }
+        }
+    }
+    free(array_utenti);
 	
 	return 0;
 }

@@ -1,13 +1,16 @@
-CFLAGS= -std=c89 -pedantic
+CFLAGS=-std=c89 -pedantic -g -O0
 
 master: master.c master.h
-	gcc $(CFLAGS) master.c -o masterbook
+	gcc -c $(CFLAGS) master.c -o masterbook	
+	
+nodi: nodi.c nodi.h
+	gcc -c $(CFLAGS) nodi.c -o nodi	
 
 utenti: utenti.c utenti.h
-    gcc $(GFLAGS) utenti.c -o 
+	gcc -c $(CFLAGS)utenti.c -o utenti
 
-bilancio: master.c master.o
-    gcc $(GFLAGS) -D master.c master.o  -o test-bilancio
+transazioni: transazioni.c
+	gcc -c $(CFLAGS) transazioni.c -o test/transazioni.o
 
 all: master
 

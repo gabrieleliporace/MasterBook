@@ -14,9 +14,14 @@
 #include <sys/shm.h>
 #include <signal.h>/*Gestione dei segnali fra processi*/
 
-/*Definizione metodi*/
-long bilancio();
-int val_transazione(long Bill,int reward);
+/*
+ *Definizione metodi
+ */
+int get_balance(int b_i);
+char * id (int utenti[],int sender);
+int all_utenti(int reward,int bilancio,char * identificatore);
+int get_attesa (int tmax,int tmin);
 
 
 #endif 
+    
