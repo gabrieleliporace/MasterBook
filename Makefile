@@ -12,6 +12,9 @@ main: ./test/test-trans-main.c ./test/transazioni.o
 sender: ./test/test-trans-main.c ./test/transazioni.o
 	gcc $(CFLAGS) -D SENDER ./test/test-trans-main.c ./test/transazioni.o -o test/trans-sender
 
+master_test: ./test/transazioni.o utenti.o nodi.o master.c master.h
+	gcc $(CFLAGS) master.c utenti.o test/transazioni.o nodi.o -o masterbook
+
 all: master
 
 clean:
