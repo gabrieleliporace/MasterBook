@@ -43,19 +43,29 @@ int  inizializzazione_valori()
 int main(int argc, char *argv[])
 { 
 	int utenti,nodi,bilancio,creo_transazione,count,status,t_attesa;
+    int sem_id;
     char * id_transazione;
 	long Bill;
     pid_t * array_utenti,pid_user; /*Tipo integer e rappresenta l'id del processo*/
     pid_t * array_nodi,pid_nod;
     struct sigaction sa; /*Gestione dei segnali*/
+    struct sembuf sops; /*Struct per operazioni sui semafori*/
     inizializzazione_valori(); /*Richiamo la funzione per le variabili globali*/
     printf("my pid: %d\n",getpid());
     bzero(&sa, sizeof(sa));
     sa.sa_handler=my_handler;
     sigaction(SIGALRM,&sa,NULL);
     sigaction(SIGUSR1,&sa,NULL);
-    alarm(SO_SIM_SEC);
-    
+
+
+    /* creazione di semaforo per la sincronizzazione dei processi */
+	sem_id=semget(SEM_KEY,3,IPC_CREAT|0600);
+	semctl(sem_id,0,SETVAL,0);
+	semctl(sem_id,1,SETVAL,0);
+	semctl(sem_id,2,SETVAL,0);
+
+    sops.sem_flg=0;
+
 	/*
     Dichiarazione array per PID utenti e PID nodi
     */
@@ -73,23 +83,41 @@ int main(int argc, char *argv[])
           case -1:
              exit(EXIT_FAILURE);
           case 0:
+
             /*La funzione free() dealloca il bloccco di memoria preallocato dalla malloc*/
             free(array_utenti);
-			/*calcolo l'attesa*/
+
+            /*Semaforo per inizializzazione array_utenti*/
+            sops.sem_num=0;	
+            sops.sem_op=1;
+            semop(sem_id,&sops,1);
+
+            /*Blocco per sincronizzare con l'avvio del timer*/
+            sops.sem_num=2;
+            sops.sem_op=1;
+            semop(sem_id,&sops,1);
+            
+            printf("Utente #%d\n",utenti);
+/*
+			calcolo l'attesa
 			t_attesa = get_attesa(SO_MAX_TRANS_GEN_NSEC,SO_MIN_TRANS_GEN_NSEC);
-			/*calcolo il bilancio*/
+			calcolo il bilancio
 			bilancio = get_balance(SO_BUDGET_INIT); 
-			/*creo l'id della transazione*/
-			/*id_transazione = id(array_utenti,pid_user);*/
-			/*creo la transazione*/
+			creo l'id della transazione
+			id_transazione = id(array_utenti,pid_user);
+			creo la transazione
 			creo_transazione = all_utenti(SO_REWARD,bilancio,id_transazione);
 			printf("l'id della transazione e' %s \n",id_transazione);
 			usleep(t_attesa);
 			exit(0);
+*/
+            sleep(35);
+            exit(0);
             break;
 
             default:
-                array_utenti[utenti]=pid_user; /*inserisce nell'array utenti il pid del processo figlio*/
+                /*inserisce nell'array utenti il pid del processo figlio*/
+                array_utenti[utenti]=pid_user;
                 break;
         }
     }
@@ -97,49 +125,85 @@ int main(int argc, char *argv[])
     /*
     creo i processi nodo con fork()
     */
-    for(nodi = 1; nodi<=SO_NODES_NUM;nodi++){
+    for(nodi = 0; nodi<=SO_NODES_NUM;nodi++){
         switch (pid_nod=fork())
         {
         case -1:
             exit(EXIT_FAILURE);
         case 0:
+
 		    free(array_nodi);
-            /*body*/
+
+            /*Semaforo per inizializzazione array_utenti*/
+            sops.sem_num=1;	
+            sops.sem_op=1;
+            semop(sem_id,&sops,1);
+
+            /*Blocco per sincronizzare con l'avvio del timer*/
+            sops.sem_num=2;
+            sops.sem_op=1;
+            semop(sem_id,&sops,1);
+
+            printf("Nodo #%d\n",nodi);
+            sleep(30);
             exit(0);
-            break;
 
         default:
 			array_nodi[nodi]=pid_nod;
              break;
         }
     }
+
+    /*Lascio partire gli utenti*/
+	sops.sem_num=0;	
+	sops.sem_op=-utenti;
+	semop(sem_id,&sops,1);
+    
+    /*Lascio partire i nodi*/
+	sops.sem_num=1;	
+	sops.sem_op=-nodi;
+	semop(sem_id,&sops,1);
+
+    /*Avvio la simulazione e il timer*/
+	sops.sem_num=2;	
+	sops.sem_op=utenti+nodi;
+	semop(sem_id,&sops,1);
+
+    alarm(SO_SIM_SEC);
+
     while(i){
 
+        
         /* verifico che i pid che mi ritornino siano quelli utente,
          * cosi' quando a zero termino
          */
 
-        for(count=0; count<SO_USERS_NUM;count++){
-            while(waitpid(array_utenti[count],&status,WUNTRACED | WCONTINUED)!= -1){
-                 /*
-                 * attendo la terminazione di tutti i processi utente
-                 */ 
+        /*for(count=0; count<SO_USERS_NUM;count++){*/
+        while(waitpid(array_utenti[count-1],&status,WUNTRACED | WCONTINUED)!= -1){
+             /*
+             * attendo la terminazione di tutti i processi utente
+             */ 
 
-                /*controllo causa uscita e riduco di uno gli utenti attivi*/
-                if(WIFEXITED(status)){
-                    utenti--;
-                }
-                if(WIFSIGNALED(status)){
-                    utenti--;
-                }   
-                printf("utenti rimasti: %d\n", utenti);
-
-                /*alzo un sigalrm che setta i a 0*/
-                raise(SIGALRM);
+            /*controllo causa uscita e riduco di uno gli utenti attivi*/
+            if(WIFEXITED(status)){
+                utenti--;
             }
+            if(WIFSIGNALED(status)){
+                utenti--;
+            }   
+            printf("utenti rimasti: %d\n", utenti);
+
+            /*alzo un sigalrm che setta i a 0*/
+            raise(SIGALRM);
         }
+        /*}*/
+
     }
+	/*Rimuovo il semaforo*/
+	semctl(sem_id,0,IPC_RMID);
+
     free(array_utenti);
+    free(array_nodi);
 
     return 0;
 }
