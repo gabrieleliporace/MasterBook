@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 			usleep(t_attesa);
 			exit(0);
 */
-            sleep(35);
+            sleep(5);
             exit(0);
             break;
 
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
          */
 
         /*for(count=0; count<SO_USERS_NUM;count++){*/
-        while(waitpid(array_utenti[count-1],&status,WUNTRACED | WCONTINUED)!= -1){
+        while(waitpid(array_utenti[utenti],&status,WUNTRACED | WCONTINUED)!= -1){
              /*
              * attendo la terminazione di tutti i processi utente
              */ 
