@@ -6,14 +6,20 @@ master: master.c master.h
 transazioni: transazioni.c
 	gcc -c $(CFLAGS) transazioni.c -o test/transazioni.o
 
+utenti: utenti.c
+	gcc -c $(CFLAGS) utenti.c -o test/utenti.o
+
+nodi: nodi.c
+	gcc -c $(CFLAGS) nodi.c -o test/nodi.o
+
 main: ./test/test-trans-main.c ./test/transazioni.o
 	gcc $(CFLAGS) ./test/test-trans-main.c ./test/transazioni.o -o test/trans-main
 
 sender: ./test/test-trans-main.c ./test/transazioni.o
 	gcc $(CFLAGS) -D SENDER ./test/test-trans-main.c ./test/transazioni.o -o test/trans-sender
 
-master_test: ./test/transazioni.o utenti.o nodi.o master.c master.h
-	gcc $(CFLAGS) master.c utenti.o test/transazioni.o nodi.o -o masterbook
+master_test: ./test/transazioni.o ./test/utenti.o ./test/nodi.o master.c master.h
+	gcc $(CFLAGS) master.c test/utenti.o test/transazioni.o test/nodi.o -o masterbook
 
 all: master
 
