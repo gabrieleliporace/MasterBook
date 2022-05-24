@@ -8,9 +8,12 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include <sys/types.h>
+#include <sys/msg.h>
 #include <signal.h>
 #include <errno.h>
 #include <time.h>
+#include <semaphore.h>
+ 
 
 /* definizione di macro*/
 #define SO_BLOCK_SIZE 10
