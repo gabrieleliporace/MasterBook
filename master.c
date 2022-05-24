@@ -13,6 +13,9 @@ void my_handler(int signum)
 
         case SIGUSR1:
             break;
+
+        case SIGTERM:
+            break;
     }
 }
 
@@ -111,7 +114,11 @@ int main(int argc, char *argv[])
 			usleep(t_attesa);
 			exit(0);
 */
-            sleep(5);
+            if (utenti == 10 || utenti==19){
+                sleep(5);
+            }else{
+                sleep(35);
+            }
             exit(0);
             break;
 
@@ -166,7 +173,7 @@ int main(int argc, char *argv[])
 
     /*Avvio la simulazione e il timer*/
 	sops.sem_num=2;	
-	sops.sem_op=utenti+nodi;
+	sops.sem_op=-(utenti+nodi);
 	semop(sem_id,&sops,1);
 
     alarm(SO_SIM_SEC);
@@ -198,6 +205,18 @@ int main(int argc, char *argv[])
         }
         /*}*/
 
+    }
+
+    sigaction(SIGTERM,&sa,NULL);
+
+    /*Termino tutti gli utenti rimasti*/
+    for (count=0; count < utenti; count++){
+        kill(array_utenti[utenti], SIGTERM);
+    }
+    
+    /*Termino tutti i nodi rimasti*/
+    for (count=0; count < nodi; count++){
+        kill(array_nodi[nodi], SIGTERM);
     }
 	/*Rimuovo il semaforo*/
 	semctl(sem_id,0,IPC_RMID);
