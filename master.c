@@ -127,9 +127,9 @@ int main(int argc, char *argv[])
                 srand(spec.tv_nsec);
                 rec = rand() % SO_USERS_NUM-1;
                 reciver = &array_utenti[rec];
-                /*printf("il reciver e' %ld\n",reciver);*/
-                transaction = creazione_transazione(SO_REWARD,bilancio,reciver,sender);
-                printf("la transazione e' %s \n",transaction);
+                printf("il reciver e' %d\n",reciver);
+                /*transaction = creazione_transazione(SO_REWARD,bilancio,reciver,sender);
+                printf("la transazione e' %s \n",transaction);*/
             }
 
 
