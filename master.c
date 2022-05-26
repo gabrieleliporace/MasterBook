@@ -56,15 +56,12 @@ int  inizializzazione_valori()
 int main(int argc, char *argv[])
 { 
 	int utenti,nodi,bilancio,count,status,t_attesa;
-    int sender,reciver,rec;
-    size_t u;
+    int sender,reciver;
     int msg_id;
     int sem_id;  
     char * transaction;
-	long Bill;
     pid_t * array_utenti,pid_user; /*Tipo integer e rappresenta l'id del processo*/
     pid_t * array_nodi,pid_nod;
-    struct timespec spec;
     struct sigaction sa; /*Gestione dei segnali*/
     struct sembuf sops; /*Struct per operazioni sui semafori*/
     inizializzazione_valori(); /*Richiamo la funzione per le variabili globali*/
@@ -124,13 +121,6 @@ int main(int argc, char *argv[])
                 printf("la transazione e' %s \n",transaction);
             }
 
-
-			exit(0);
-            if (utenti == 10 || utenti==19){
-                sleep(5);
-            }else{
-                sleep(35);
-            }
             exit(0);
             break;
 

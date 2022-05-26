@@ -33,18 +33,6 @@ int val_reward(int vtran,int reward){
     
 }
 /*
- *genero l'id della transazione
- */
-/*char * id (pid_t * utenti[],int sender){
-    char * i_d;
-    size_t u = sizeof(utenti)/sizeof(utenti[0]);
-    int reciver,r;
-    r = rand() % u;
-    reciver = utenti[r];
-    i_d = genera_Identificatore(sender,reciver);
-    return i_d;
-}*/
-/*
  *estraggo randomicamente il tempo d'attesa che il processo utente deve avere
  */
 int get_attesa(int tmax,int tmin){
