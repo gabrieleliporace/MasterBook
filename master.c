@@ -19,17 +19,15 @@ void my_handler(int signum)
     }
 }
 
-/*int get_casual_pid(pid_t * array){
-    int r,reciver;
-    struct timespec spec; 
-    size_t u;
+int get_casual_pid(pid_t * array,int un){ 
+    struct timespec spec;
+    int rec,pid;
     clock_gettime(CLOCK_REALTIME,&spec);
     srand(spec.tv_nsec);
-    u = sizeof(array)/sizeof(array[0]);
-    r = rand() % u;
-    reciver = array[r];
-    return reciver;
-}  */
+    rec = rand() % un;
+    pid = array[rec];
+    return pid;
+}  
 
 int  inizializzazione_valori()
 {
@@ -102,9 +100,7 @@ int main(int argc, char *argv[])
           case -1:
              exit(EXIT_FAILURE);
           case 0:
-
             /*La funzione free() dealloca il bloccco di memoria preallocato dalla malloc*/
-            free(array_utenti);
 
             /*Semaforo per inizializzazione array_utenti*/
             sops.sem_num=0;	
@@ -116,20 +112,16 @@ int main(int argc, char *argv[])
             sops.sem_op=1;
             semop(sem_id,&sops,1);
             
-            printf("Utente #%d\n",utenti);
+            /*printf("Utente #%d\n",utenti);*/
 
             /*creazione transazione*/
             bilancio = get_balance(SO_BUDGET_INIT);
             if(bilancio >= 2){
                 sender = getpid();
-                /*u = sizeof(array_utenti)/sizeof(array_utenti[0]);*/
-                clock_gettime(CLOCK_REALTIME,&spec);
-                srand(spec.tv_nsec);
-                rec = rand() % SO_USERS_NUM-1;
-                reciver = &array_utenti[rec];
+                reciver = get_casual_pid(array_utenti,utenti);
                 printf("il reciver e' %d\n",reciver);
-                /*transaction = creazione_transazione(SO_REWARD,bilancio,reciver,sender);
-                printf("la transazione e' %s \n",transaction);*/
+                transaction = creazione_transazione(SO_REWARD,bilancio,reciver,sender);
+                printf("la transazione e' %s \n",transaction);
             }
 
 
@@ -145,6 +137,7 @@ int main(int argc, char *argv[])
             default:
                 /*inserisce nell'array utenti il pid del processo figlio*/
                 array_utenti[utenti]=pid_user;
+
                 break;
         }
     }
