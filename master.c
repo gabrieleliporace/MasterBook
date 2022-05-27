@@ -18,15 +18,24 @@ void my_handler(int signum)
             break;
     }
 }
-
+/*
+ *Funzione per l'estarzione di un pid casuale
+ */
 int get_casual_pid(pid_t * array,int un){ 
     struct timespec spec;
     int rec,pid;
-    clock_gettime(CLOCK_REALTIME,&spec);
-    srand(spec.tv_nsec);
-    rec = rand() % un;
-    pid = array[rec];
-    return pid;
+    /*if (array == NULL){
+        clock_gettime(CLOCK_REALTIME,&spec);
+        srand(spec.tv_nsec);
+        rec = rand() % un;
+        return rec ;
+    }else{*/
+        clock_gettime(CLOCK_REALTIME,&spec);
+        srand(spec.tv_nsec);
+        rec = rand() % un;
+        pid = array[rec];
+        return pid;
+
 }  
 
 int  inizializzazione_valori()
@@ -56,7 +65,7 @@ int  inizializzazione_valori()
 int main(int argc, char *argv[])
 { 
 	int utenti,nodi,bilancio,count,status,t_attesa;
-    int sender,reciver;
+    int sender,reciver,nodo_reciver,nod;
     int msg_id;
     int sem_id;  
     char * transaction;
@@ -87,11 +96,19 @@ int main(int argc, char *argv[])
     array_utenti=malloc(SO_USERS_NUM*sizeof(*array_utenti));
     array_nodi=malloc(SO_NODES_NUM*sizeof(*array_nodi));
 
-    /*
-     Creo con fork() i processi utente
-     */
+    /*creo la pipe*/
 
+    int fd[2];
+    if (pipe(fd)==-1){
+        printf("Problema nella creazione della pipe\n");
+        return 2;
+    }
+
+     /*
+      *Creo con fork() i processi utente
+      */
     for(utenti=0; utenti<SO_USERS_NUM;utenti++){
+        
         switch(pid_user=fork())
           {
           case -1:
@@ -109,16 +126,16 @@ int main(int argc, char *argv[])
             sops.sem_op=1;
             semop(sem_id,&sops,1);
             
-            /*printf("Utente #%d\n",utenti);*/
-
-            /*creazione transazione*/
             bilancio = get_balance(SO_BUDGET_INIT);
             if(bilancio >= 2){
+                /*Creazione transazione*/
                 sender = getpid();
                 reciver = get_casual_pid(array_utenti,utenti);
-                printf("il reciver e' %d\n",reciver);
+                close(fd[1]);
+                read(fd[0],&nodo_reciver,sizeof(int));
+                close(fd[0]);
+                printf("il pid nodo e' %d\n",nodo_reciver);
                 transaction = creazione_transazione(SO_REWARD,bilancio,reciver,sender);
-                printf("la transazione e' %s \n",transaction);
             }
 
             exit(0);
@@ -142,8 +159,6 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         case 0:
 
-		    free(array_nodi);
-
             /*Semaforo per inizializzazione array_utenti*/
             sops.sem_num=1;	
             sops.sem_op=1;
@@ -154,7 +169,13 @@ int main(int argc, char *argv[])
             sops.sem_op=1;
             semop(sem_id,&sops,1);
 
-            /*printf("Nodo #%d\n",nodi);*/
+            /*estrazione pid nodo casuale*/
+            close(fd[0]);
+            nod = get_casual_pid(array_nodi,nodi);   
+            write(fd[1],&nod,sizeof(int));
+            close(fd[1]);
+
+
             sleep(30);
             exit(0);
 
