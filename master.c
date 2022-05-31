@@ -25,14 +25,14 @@ int get_casual_pid(pid_t * array,int un){
     if (array == NULL){
         clock_gettime(CLOCK_REALTIME,&spec);
         srand(spec.tv_nsec);
-        rec = rand() % un;
+        rec = rand() % un + 0;
         return rec ;
     }else{
-        clock_gettime(CLOCK_REALTIME,&spec);
-        srand(spec.tv_nsec);
-        rec = rand() % un;
-        pid = array[rec];
-        return pid;
+    clock_gettime(CLOCK_REALTIME,&spec);
+    srand(spec.tv_nsec);
+    rec = rand() % un + 0;
+    pid = array[rec];
+    return pid;
     }
 }  
 
@@ -62,14 +62,15 @@ int  inizializzazione_valori()
 /*inizio main*/
 int main(int argc, char *argv[])
 { 
-	int utenti,nodi,bilancio,count,status,t_attesa;
+	int utenti,nodi,bilancio,status,count,t_attesa;
     int sender,reciver,rec;
-    int inod,p;
+    int npid,n,ni,nid;
     pid_t u;
     int vivi;
     int myretry;
     int msg_id;
     int sem_id;  
+    char * my_buff;
     char * transaction;
     pid_t miopid;
     pid_t * array_utenti,pid_user; /*Tipo integer e rappresenta l'id del processo*/
@@ -101,13 +102,12 @@ int main(int argc, char *argv[])
     array_utenti=malloc(SO_USERS_NUM*sizeof(*array_utenti));
     array_nodi=malloc(SO_NODES_NUM*sizeof(*array_nodi));
 
-    /*creo la pipe*/
+     /*creo la pipe*/
 
-    int fd[2];
-    if (pipe(fd)==-1){
-        printf("Problema nella creazione della pipe\n");
-        return 2;
-    }
+    int my_pipe[2];
+    pipe(my_pipe);
+
+    my_buff = malloc(100);
 
     /*
     creo i processi nodo con fork()
@@ -134,7 +134,6 @@ int main(int argc, char *argv[])
             sops.sem_op=1;
             semop(sem_id,&sops,1);
 
-            /*printf("Nodo #%d\n",nodi);*/
             sleep(30);
             exit(0);
 
@@ -143,16 +142,18 @@ int main(int argc, char *argv[])
              break;
         }
     }
+    
     /*
-     *creo processi utente con la fork()
+     *creo processi utente
      */
+
     for(utenti=0; utenti<SO_USERS_NUM;utenti++){
         switch(pid_user=fork())
           {
           case -1:
              exit(EXIT_FAILURE);
           case 0:
-            /*La funzione free() dealloca il bloccco di memoria preallocato dalla malloc*/
+
             alarm(SO_SIM_SEC);
 
             /*Semaforo per inizializzazione array_utenti*/
@@ -164,12 +165,9 @@ int main(int argc, char *argv[])
             sops.sem_num=2;
             sops.sem_op=1;
             semop(sem_id,&sops,1);
-            
-            /*printf("Utente #%d\n",utenti);*/
-
+        
             myretry=SO_RETRY;
             while(myretry){
-            /*creazione transazione*/
             /*bilancio = get_balance(SO_BUDGET_INIT);*/
 #ifdef BIL
                 bilancio = 2;
@@ -177,17 +175,29 @@ int main(int argc, char *argv[])
                 bilancio = 1;
 #endif
                 if(bilancio >= 2){
-                    read(fd[0],&p,sizeof(int));
+
+                    /*prendo il pid nodo casuale*/
+                    read(my_pipe[0],my_buff,100);
+                    n = atoi(my_buff);    
+                    npid = get_casual_pid(NULL,n-1);
+                    dprintf(my_pipe[1],"%d\n",npid);
+                    read(my_pipe[0],my_buff,100);
+                    npid = atoi(my_buff);
+                    printf("il pid e' %d\n",npid);
+                    
                     myretry=SO_RETRY;
+
+                    /*prendo pid casuale utente e creo transazione*/
                     sender = getpid();
                     reciver = get_casual_pid(array_utenti,utenti);
-                    inod = get_casual_pid(NULL,p-1);
-                    printf("il pid e' %d \n",inod);
-                    printf("il reciver e' %d\n",reciver);
+            
                     transaction = creazione_transazione(SO_REWARD,bilancio,reciver,sender);
                     printf("la transazione e' %s \n",transaction);
+
                     sleep(1);
+
                 }else if(bilancio < 2){
+
                     myretry--;
                     sleep(1);
                 }
@@ -198,9 +208,14 @@ int main(int argc, char *argv[])
             default:
                 /*inserisce nell'array utenti il pid del processo figlio*/
                 array_utenti[utenti]=pid_user;
-                write(fd[1],&SO_NODES_NUM,sizeof(int));
-                close(fd[0]);
-                close(fd[1]);
+
+                /*uso pipe per pid nodo casuale*/
+                dprintf(my_pipe[1],"%d\n",SO_NODES_NUM);
+                read(my_pipe[0],my_buff,100);
+                ni = atoi(my_buff);
+                nid = array_nodi[ni];
+                dprintf(my_pipe[1],"%d\n",nid);
+
                 break;
         }
     }
@@ -260,6 +275,11 @@ int main(int argc, char *argv[])
 	semctl(sem_id,0,IPC_RMID);
 
     msgctl(msg_id, IPC_RMID, NULL);
+
+    close(my_pipe[0]);
+    close(my_pipe[1]);
+    free(my_buff);
+
     free(array_utenti);
     free(array_nodi);
 
