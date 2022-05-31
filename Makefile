@@ -3,6 +3,12 @@ CFLAGS= -std=c89 -pedantic -g -O0
 master: ./test/transazioni.o ./test/utenti.o ./test/nodi.o master.c master.h
 	gcc $(CFLAGS) master.c test/utenti.o test/transazioni.o test/nodi.o -o masterbook
 
+bil1: ./test/transazioni.o ./test/utenti.o ./test/nodi.o master.c master.h
+	gcc $(CFLAGS) master.c test/utenti.o test/transazioni.o test/nodi.o -o masterbook
+
+bil2: ./test/transazioni.o ./test/utenti.o ./test/nodi.o master.c master.h
+	gcc $(CFLAGS) -D BIL master.c test/utenti.o test/transazioni.o test/nodi.o -o masterbook
+
 transazioni: transazioni.c
 	gcc -c $(CFLAGS) transazioni.c -o test/transazioni.o
 
