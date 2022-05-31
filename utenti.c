@@ -8,7 +8,7 @@ int get_balance(int b_i){
     /*ritorno il bilancio iniziale solo per prova*/
     return b_i;
 }
-/*
+/* 
  *Calcolo valore transazione
  */
 int val_transazione(int bilancio){
@@ -34,16 +34,16 @@ int val_reward(int vtran,int reward){
 }
 /*
  *genero l'id della transazione
-char * id (int utenti[],int sender){
+ */
+/*char * id (pid_t * utenti[],int sender){
+    char * i_d;
     size_t u = sizeof(utenti)/sizeof(utenti[0]);
     int reciver,r;
-    char * i_d;
     r = rand() % u;
     reciver = utenti[r];
-    i_d= genera_Identificatore(sender,reciver);
+    i_d = genera_Identificatore(sender,reciver);
     return i_d;
-}
-*/
+}*/
 /*
  *estraggo randomicamente il tempo d'attesa che il processo utente deve avere
  */
@@ -58,11 +58,12 @@ int get_attesa(int tmax,int tmin){
 /*
  *funzione per creare la transazione
  */
-int all_utenti(int reward,int bilancio,char * identificatore){
-    int vtran,vreward,quantity;
+char * creazione_transazione(int reward,int bilancio,int reciver,int sender){
     char * T;
-    /*verifico che il bilancio sia >= a 2*/
-    if (bilancio >= 2){
+    char * i_d;
+    int vtran,vreward,quantity;
+    /*genero il pid della transazione*/
+    i_d = genera_Identificatore(sender,reciver);
     /*calcolo il valore totale della transazione*/
     vtran = val_transazione(bilancio);
     /*richiamo la funzione per il calcolo del reward*/
@@ -70,16 +71,8 @@ int all_utenti(int reward,int bilancio,char * identificatore){
     /*sotraggo il valore di reward per trovare la quantita' da dare alla transazione*/
     quantity = vtran - vreward; 
     /*creo la transazione*/
-    T = transaction_create(identificatore,quantity,vreward); 
-    return 0;
-    /*se il bilancio risulta minore di 2*/
-    }
-    else
-    {
-        return -1;
-    }
-
-    
+    T = transaction_create(i_d,quantity,vreward); 
+    return T;
     
 }
 

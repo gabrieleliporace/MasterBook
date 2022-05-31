@@ -14,12 +14,11 @@
 #include <sys/shm.h>
 #include <signal.h>/*Gestione dei segnali fra processi*/
 
-/*
+/* 
  *Definizione metodi
  */
 int get_balance(int b_i);
-char * id (int utenti[],int sender);
-int all_utenti(int reward,int bilancio,char * identificatore);
+char * creazione_transazione(int reward,int bilancio,int reciver,int sender);
 int get_attesa (int tmax,int tmin);
 
 
