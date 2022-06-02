@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
     int sem_id;  
     char * transaction;
 	long Bill;
+    int casual,numnodi;
     pid_t miopid;
     pid_t * array_utenti,pid_user; /*Tipo integer e rappresenta l'id del processo*/
     pid_t * array_nodi,pid_nod;
@@ -154,6 +155,7 @@ int main(int argc, char *argv[])
             
             /*printf("Utente #%d\n",utenti);*/
 
+            numnodi=SO_NODES_NUM;
             myretry=SO_RETRY;
             while(myretry){
             /*creazione transazione*/
@@ -166,6 +168,8 @@ int main(int argc, char *argv[])
                 if(bilancio >= 2){
                     myretry=SO_RETRY;
                     sender = getpid();
+                    casual = get_casual_pid(array_nodi,numnodi);
+                    printf("il nodo destinatario e': %d\n", casual);
                     reciver = get_casual_pid(array_utenti,utenti);
                     printf("il reciver e' %d\n",reciver);
                     transaction = creazione_transazione(SO_REWARD,bilancio,reciver,sender);
