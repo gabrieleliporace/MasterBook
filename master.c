@@ -57,10 +57,11 @@ int main(int argc, char *argv[])
 { 
     /*dichiarazioni per processi utente*/ 
     struct mesg_buffer message;
-    struct timespec spec;
+    struct timespec spec,ts;
     pid_t * array_utenti,pid_user;
     int utenti,bilancio,count,status;
     int sender,reciver,rec;
+    int shm_utenti,shm_nodi;
     long t_attesa;
     char * transaction,nod_transaction;
 
@@ -83,7 +84,7 @@ int main(int argc, char *argv[])
     inizializzazione_valori(); /*Richiamo la funzione per le variabili globali*/
     
     /*creazioe coda di messaggi per mandare la transazione*/
-    msg_id = msgget(MSG_KEY,IPC_CREAT | 0600 );
+    msg_id = msgget(MSG_KEY,IPC_CREAT | 0600);
     if (msg_id == -1) {
         perror("msgget");
         return EXIT_FAILURE;
@@ -95,16 +96,21 @@ int main(int argc, char *argv[])
 	semctl(sem_id,1,SETVAL,0);
 	semctl(sem_id,2,SETVAL,0);
 
+    /*Creazione memoria condivisa nodi e utenti*/
+    shm_utenti=shmget(SHDM_UTENTI,SO_USERS_NUM*sizeof(*array_utenti),IPC_CREAT|0600);
+    shm_nodi=shmget(SHDM_NODI,SO_NODES_NUM*sizeof(*array_nodi),IPC_CREAT|0600);
+
+    /*Dichiarazione array per PID utenti e PID nodi*/
+    array_utenti=shmat(shm_utenti,NULL,0);
+    array_nodi=shmat(shm_nodi,NULL,0);
+
+    /*Marchio la shared memory come pronta per la rimozione, 
+      viene rimossa quando tutti i processi si sono staccati*/
+    shmctl(shm_utenti,IPC_RMID,NULL);
+    shmctl(shm_nodi,IPC_RMID,NULL);
+
     miopid=getpid();
     sops.sem_flg=0;
-
-    /*
-    Dichiarazione array per PID utenti e PID nodi
-    */
-
-    array_utenti=malloc(SO_USERS_NUM*sizeof(*array_utenti));
-    array_nodi=malloc(SO_NODES_NUM*sizeof(*array_nodi));
-
     /*
     creo i processi nodo con fork()
     */
@@ -117,7 +123,6 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         case 0:
 
-		    free(array_nodi);
             alarm(SO_SIM_SEC);
 
             /*Semaforo per inizializzazione array_utenti*/
@@ -130,8 +135,9 @@ int main(int argc, char *argv[])
             sops.sem_op=1;
             semop(sem_id,&sops,1);
 
+            while(1){
             /*reciver coda di messaggi*/  
-            if (msgrcv(msg_id, &message,MSG_SIZE, 0, 0) == -1) {
+            if (msgrcv(msg_id, &message,MSG_SIZE,getpid(), 0) == -1) {
             perror("msgrcv");
             return EXIT_FAILURE;
             }
@@ -140,8 +146,7 @@ int main(int argc, char *argv[])
             /*passo la transazione alla transaction-pool*/
 
 
-
-            sleep(30);
+            }
 
             exit(0);
         default:
@@ -190,7 +195,10 @@ int main(int argc, char *argv[])
                     /*Estrazione casuale pid nodo e utente*/
                     sender = getpid();
                     casual_nod = get_casual_pid(array_nodi,numnodi);
+                    do{
                     reciver = get_casual_pid(array_utenti,utenti);
+                    }while(reciver==0);
+                    
 
                     /*creo la transazione*/
                     transaction = creazione_transazione(SO_REWARD,bilancio,reciver,sender);
@@ -200,19 +208,17 @@ int main(int argc, char *argv[])
                     message.pid_nod_type = casual_nod;
                     memset(&(message.msg_text), 0, MSG_SIZE * sizeof(char));
                     (void)strcpy(message.msg_text,transaction);
-                    if (msgsnd(msg_id, &message, sizeof(long) + (strlen(message.msg_text) * sizeof(char)) + 1, 0) == -1) {
+                    if (msgsnd(msg_id, &message,sizeof(long)+(strlen(message.msg_text) * sizeof(char)) + 1, 0) == -1) {
                     perror("msgsnd");
                     return EXIT_FAILURE;
                     }
-                    printf("il messaggio e' %s\n",message.msg_text);
+                    /*printf("il messaggio e' %s\n",message.msg_text);*/
 
                     /*attesa in nanosecondi*/
-                    /*ts.tv_sec = 0;
-                    ts.tv_nsec = get_attesa(SO_MAX_TRANS_GEN_NSEC,SO_MIN_TRANS_GEN_NSEC);*/
-                    t_attesa = get_attesa(SO_MAX_TRANS_GEN_NSEC,SO_MIN_TRANS_GEN_NSEC);
-                    nanosleep((const struct timespec[]){{0,t_attesa}}, NULL);
-                    printf("Attesa in nanosec di %ld\n",t_attesa);
-                    /*nanosleep(ts.tv_sec,ts.tv_nsec);*/
+                    ts.tv_sec = 0;
+                    ts.tv_nsec = get_attesa(SO_MAX_TRANS_GEN_NSEC,SO_MIN_TRANS_GEN_NSEC);
+                    /*printf("Attesa in nanosec di %ld\n",ts.tv_nsec);*/
+                    nanosleep(&ts,NULL);
                 
                 sleep(1);
                 }else if(bilancio < 2){
@@ -264,6 +270,7 @@ int main(int argc, char *argv[])
         for(count=0; count < utenti; count++){
             if(u==array_utenti[count]){
                 vivi--;
+                array_utenti[count]=0;
             }
             
         }
@@ -286,8 +293,6 @@ int main(int argc, char *argv[])
 	semctl(sem_id,0,IPC_RMID);
 
     msgctl(msg_id, IPC_RMID, NULL); 
-    free(array_utenti);
-    free(array_nodi);
 
     return 0;
 }
