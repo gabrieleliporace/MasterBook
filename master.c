@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
     int myretry;
     int msg_id;
     int sem_id;  
+    int shm_utenti, shm_nodi;
     char * transaction;
 	long Bill;
     int casual,numnodi;
@@ -85,6 +86,22 @@ int main(int argc, char *argv[])
 	semctl(sem_id,1,SETVAL,0);
 	semctl(sem_id,2,SETVAL,0);
 
+    shm_utenti=shmget(SHDM_UTENTI,SO_USERS_NUM*sizeof(*array_utenti),IPC_CREAT|0600);
+    shm_nodi=shmget(SHDM_NODI,SO_USERS_NUM*sizeof(*array_nodi),IPC_CREAT|0600);
+
+
+
+    array_utenti=shmat(shm_utenti,NULL,0);
+    array_nodi=shmat(shm_nodi,NULL,0);
+
+
+    /*Marchio la shared memory come pronta per la rimozione, 
+      viene rimossa quando tutti i processi si sono staccati
+     */
+    shmctl(shm_utenti,IPC_RMID,NULL);
+    shmctl(shm_nodi,IPC_RMID,NULL);
+
+
     miopid=getpid();
     sops.sem_flg=0;
 
@@ -92,8 +109,8 @@ int main(int argc, char *argv[])
     Dichiarazione array per PID utenti e PID nodi
     */
 
-    array_utenti=malloc(SO_USERS_NUM*sizeof(*array_utenti));
-    array_nodi=malloc(SO_NODES_NUM*sizeof(*array_nodi));
+    /*array_utenti=malloc(SO_USERS_NUM*sizeof(*array_utenti));
+    array_nodi=malloc(SO_NODES_NUM*sizeof(*array_nodi));*/
 
     /*
      Creo con fork() i processi utente
@@ -111,7 +128,7 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         case 0:
 
-		    free(array_nodi);
+		    /*free(array_nodi);*/
             alarm(SO_SIM_SEC);
 
             /*Semaforo per inizializzazione array_utenti*/
@@ -170,7 +187,9 @@ int main(int argc, char *argv[])
                     sender = getpid();
                     casual = get_casual_pid(array_nodi,numnodi);
                     printf("il nodo destinatario e': %d\n", casual);
+                    do{
                     reciver = get_casual_pid(array_utenti,utenti);
+                    }while(reciver==0);
                     printf("il reciver e' %d\n",reciver);
                     transaction = creazione_transazione(SO_REWARD,bilancio,reciver,sender);
                     printf("la transazione e' %s \n",transaction);
@@ -224,6 +243,7 @@ int main(int argc, char *argv[])
         for(count=0; count < utenti; count++){
             if(u==array_utenti[count]){
                 vivi--;
+                array_utenti[count]=0;
             }
             
         }
@@ -241,13 +261,12 @@ int main(int argc, char *argv[])
     printf("nodi %d\n", nodi);
     printf("miopid %d\n", getpid());
 
-    printf("ciao ciao \n");
 	/*Rimuovo il semaforo*/
 	semctl(sem_id,0,IPC_RMID);
 
     msgctl(msg_id, IPC_RMID, NULL);
-    free(array_utenti);
-    free(array_nodi);
+    /*free(array_utenti);
+    free(array_nodi);*/
 
     return 0;
 }
