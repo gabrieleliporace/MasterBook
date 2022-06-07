@@ -26,7 +26,7 @@ int val_reward(int vtran,int reward){
     int r = (vtran * reward ) / 100;
     if (r >= 1){
     return r;
-    }else {
+    }else if (r<1){
     r = 1;
     return r;
     }
@@ -35,8 +35,8 @@ int val_reward(int vtran,int reward){
 /*
  *estraggo randomicamente il tempo d'attesa che il processo utente deve avere
  */
-int get_attesa(int tmax,int tmin){
-    int tempo_attesa;
+long get_attesa(int tmax,int tmin){
+    long tempo_attesa;
     struct timespec spec;
     clock_gettime(CLOCK_REALTIME,&spec);
     srand(spec.tv_nsec);

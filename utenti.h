@@ -19,7 +19,7 @@
  */
 int get_balance(int b_i);
 char * creazione_transazione(int reward,int bilancio,int reciver,int sender);
-int get_attesa (int tmax,int tmin);
+long get_attesa (int tmax,int tmin);
 
 
 #endif 
