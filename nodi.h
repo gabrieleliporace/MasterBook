@@ -1,7 +1,7 @@
 #ifndef _NODI_H
 #define _NODI_H
 
-#define SENDER -1 /*per la creazione della transazione reward*/
+
 #define _GNU_SOURCE 
 #include <stdio.h> 
 #include <string.h> /*Manipolazione stringhe*/
@@ -18,8 +18,7 @@
 
 /*definizione funzioni*/
 /*crea la transazione con la somma dei reward*/
-char * reward_transaction(long somma_reward,pid_t nodo_corrente);
-/*creazione della transaction pool e blocco candidato*/
-int trans_block(char * reward_transaction,int block_size,int tp_size);
+long take_reward (char * transazione);
+char * transazione_reward(int reward,long somma_reward,int reciver,int sender);
 
 #endif

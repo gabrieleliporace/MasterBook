@@ -46,7 +46,7 @@ long get_attesa(int tmax,int tmin){
 /*
  *funzione per creare la transazione
  */
-char * creazione_transazione(int reward,int bilancio,int reciver,int sender){
+char * creazione_transazione(int reward,long bilancio,int reciver,int sender){
     char * T;
     char * i_d;
     int vtran,vreward,quantity;
@@ -63,6 +63,4 @@ char * creazione_transazione(int reward,int bilancio,int reciver,int sender){
     return T;
     
 }
-
-
 

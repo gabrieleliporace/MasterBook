@@ -57,17 +57,21 @@ int main(int argc, char *argv[])
 { 
     /*dichiarazioni per processi utente*/ 
     struct mesg_buffer message;
-    struct timespec spec,ts;
+    struct timespec spec,ts,te;
     pid_t * array_utenti,pid_user;
-    int utenti,bilancio,count,status;
-    int sender,reciver,rec;
+    int utenti,count,status;
+    int sender,receiver,rec;
     int shm_utenti,shm_nodi;
-    long t_attesa;
+    long t_attesa,bilancio;
     char * transaction,nod_transaction;
 
     /*dichiarazioni per processi nodo*/   
     pid_t * array_nodi,pid_nod;
     int nodi,casual_nod,numnodi; 
+    int tpi,btj;
+    long som_reward; 
+    char **transaction_pool;
+    char **block_transaction;
 
     /*dichiarazioni varie*/ 
     struct sigaction sa; /*Gestione dei segnali*/
@@ -111,6 +115,11 @@ int main(int argc, char *argv[])
 
     miopid=getpid();
     sops.sem_flg=0;
+
+    /*malloc per transactionpool e block*/
+    transaction_pool = malloc(SO_TP_SIZE * sizeof(char*));
+    block_transaction = malloc(SO_BLOCK_SIZE * sizeof(char*));
+
     /*
     creo i processi nodo con fork()
     */
@@ -135,18 +144,37 @@ int main(int argc, char *argv[])
             sops.sem_op=1;
             semop(sem_id,&sops,1);
 
-            while(1){
-            /*reciver coda di messaggi*/  
-            if (msgrcv(msg_id, &message,MSG_SIZE,getpid(), 0) == -1) {
-            perror("msgrcv");
-            return EXIT_FAILURE;
+            for(tpi = 0;tpi <= SO_TP_SIZE-1;tpi++){
+                
+                /*reciver coda di messaggi*/  
+                msgrcv(msg_id, &message,MSG_SIZE,getpid(),0);  
+
+                /*passo la transazione alla transaction-pool*/
+                transaction_pool[tpi] = message.msg_text;
+
+                if (tpi >= SO_BLOCK_SIZE-2 ){
+                    /*blocco transazioni*/
+                    for(btj = 0 ; btj <= SO_BLOCK_SIZE-2 ;btj++ ){
+                    block_transaction[btj]=transaction_pool[tpi];
+                    printf("block_transaction[%d",btj);
+                    printf("] = %s\n",block_transaction[btj]);
+                    /*Calcolo la somma dei reward e creo la transazione*/
+                    som_reward += take_reward(block_transaction[btj]);
+
+                    if (btj == SO_BLOCK_SIZE-2){
+                        block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
+                        /*Simulazione elaborazione in nanosecondi*/
+                        te.tv_sec = 0;
+                        te.tv_nsec = get_attesa(SO_MAX_TRANS_PROC_NSEC,SO_MIN_TRANS_PROC_NSEC);
+                        nanosleep(&ts,NULL);
+                        som_reward = 0; 
+                        }
+                    }
+                }
+                
             }
-            printf("La transazione ricevuta e' %s\n", message.msg_text);
-
-            /*passo la transazione alla transaction-pool*/
-
-
-            }
+            
+            
 
             exit(0);
         default:
@@ -196,13 +224,12 @@ int main(int argc, char *argv[])
                     sender = getpid();
                     casual_nod = get_casual_pid(array_nodi,numnodi);
                     do{
-                    reciver = get_casual_pid(array_utenti,utenti);
-                    }while(reciver==0);
+                    receiver = get_casual_pid(array_utenti,utenti);
+                    }while(receiver==0);
                     
 
                     /*creo la transazione*/
-                    transaction = creazione_transazione(SO_REWARD,bilancio,reciver,sender);
-                    /*printf("la transazione e' %s \n",transaction);*/
+                    transaction = creazione_transazione(SO_REWARD,bilancio,receiver,sender);
 
                     /*coda di messaggi*/
                     message.pid_nod_type = casual_nod;
@@ -212,12 +239,10 @@ int main(int argc, char *argv[])
                     perror("msgsnd");
                     return EXIT_FAILURE;
                     }
-                    /*printf("il messaggio e' %s\n",message.msg_text);*/
 
                     /*attesa in nanosecondi*/
                     ts.tv_sec = 0;
                     ts.tv_nsec = get_attesa(SO_MAX_TRANS_GEN_NSEC,SO_MIN_TRANS_GEN_NSEC);
-                    /*printf("Attesa in nanosec di %ld\n",ts.tv_nsec);*/
                     nanosleep(&ts,NULL);
                 
                 sleep(1);
@@ -293,6 +318,8 @@ int main(int argc, char *argv[])
 	semctl(sem_id,0,IPC_RMID);
 
     msgctl(msg_id, IPC_RMID, NULL); 
+    free(transaction_pool);
+    free(block_transaction);
 
     return 0;
 }

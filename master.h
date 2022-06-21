@@ -1,6 +1,7 @@
 #ifndef _MASTER_H
 #define _MASTER_H
 
+#define _GNU_SOURCE 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,7 +14,7 @@
 #include <errno.h>
 #include <time.h>
 #include <semaphore.h>
-#define MSG_SIZE 8192
+#define MSG_SIZE 8242
 #define TEST_ERROR    if (errno) {dprintf(2, \
 					   "%s:%d: PID=%5d: Error %d (%s)\n",\
 					   __FILE__,\
@@ -23,6 +24,7 @@
 					   strerror(errno));}
 
 /* definizione di macro*/
+#define SEND -1
 #define SO_BLOCK_SIZE 10
 #define SO_REGISTRY_SIZE 1000
 

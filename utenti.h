@@ -18,8 +18,9 @@
  *Definizione metodi
  */
 int get_balance(int b_i);
-char * creazione_transazione(int reward,int bilancio,int reciver,int sender);
+char * creazione_transazione(int reward,long bilancio,int reciver,int sender);
 long get_attesa (int tmax,int tmin);
+
 
 
 #endif 

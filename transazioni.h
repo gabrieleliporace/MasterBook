@@ -42,7 +42,7 @@ typedef struct transazione{
  */
 
 /* Genera identificatore per la transazione*/
-char * genera_Identificatore(long sender,long receiver); 
+char * genera_Identificatore(long sender,long receiver);  
 
 /* Genera la stringa completa della transazione*/
 char * transaction_create(char * id,long quantity,long reward);
