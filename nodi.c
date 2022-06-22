@@ -2,11 +2,16 @@
 #include "transazioni.h"
 
 /*creo la transazione reward*/
-/*char * reward_transaction(long somma_reward,pid_t nodo_corrente){
-
-}*/
+char * transazione_reward(int reward,long somma_reward,int receiver,int sender){
+    char * reward_transazione;
+    char * id;
+    id = genera_Identificatore(sender,receiver);
+    reward_transazione = transaction_create(id,somma_reward,reward);
+    return reward_transazione;
+    
+}
 /*creazione del blocco e della transaction pool*/
-/*int trans_block(char * reward_transaction,int block_size,int mp_size){
-    char * transaction_pool[][];
-    char * block[][];
-}*/
+long take_reward (char * transazione){
+    long r = get_reward(transazione);
+    return r;
+}
