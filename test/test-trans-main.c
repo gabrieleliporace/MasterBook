@@ -7,6 +7,7 @@ int main()
 {
     long reward;
     char * id, *ad;
+    long rec,send;
     long tr;
     pid_t miopid;
     miopid=getpid();
@@ -24,6 +25,10 @@ int main()
     printf("ad:%s\n",ad);
     tr=get_quantity(miopid,ad);
     printf("qnt: %ld\n",tr);
+    rec=get_receiver(ad);
+    printf("rec:%ld\n",rec);
+    send=get_sender(ad);
+    printf("send:%ld\n",send);
 
     return 0;
 }
