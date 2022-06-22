@@ -68,9 +68,10 @@ int main(int argc, char *argv[])
     /*dichiarazioni per processi nodo*/   
     pid_t * array_nodi,pid_nod;
     int nodi,casual_nod,numnodi; 
-    int tpi,btj;
-    long som_reward; 
-    char **transaction_pool;
+    int tpi,btj,tpj;
+    long som_reward,som_rew_tot; 
+    int shm_mastro;
+    char *mastro;
     char **block_transaction;
 
     /*dichiarazioni varie*/ 
@@ -100,24 +101,26 @@ int main(int argc, char *argv[])
 	semctl(sem_id,1,SETVAL,0);
 	semctl(sem_id,2,SETVAL,0);
 
-    /*Creazione memoria condivisa nodi e utenti*/
+    /*Creazione memoria condivisa nodi e utenti e mastro*/
     shm_utenti=shmget(SHDM_UTENTI,SO_USERS_NUM*sizeof(*array_utenti),IPC_CREAT|0600);
     shm_nodi=shmget(SHDM_NODI,SO_NODES_NUM*sizeof(*array_nodi),IPC_CREAT|0600);
+    shm_mastro=shmget(SHDM_MASTRO,sizeof(char)*SO_BLOCK_SIZE*SO_REGISTRY_SIZE, IPC_CREAT | 0600);
 
     /*Dichiarazione array per PID utenti e PID nodi*/
     array_utenti=shmat(shm_utenti,NULL,0);
     array_nodi=shmat(shm_nodi,NULL,0);
+    mastro=shmat(shm_mastro,NULL,0);
 
     /*Marchio la shared memory come pronta per la rimozione, 
       viene rimossa quando tutti i processi si sono staccati*/
     shmctl(shm_utenti,IPC_RMID,NULL);
     shmctl(shm_nodi,IPC_RMID,NULL);
+    shmctl(shm_mastro,IPC_RMID,NULL);
 
     miopid=getpid();
     sops.sem_flg=0;
 
-    /*malloc per transactionpool e block*/
-    transaction_pool = malloc(SO_TP_SIZE * sizeof(char*));
+    /*malloc per transaction_block*/
     block_transaction = malloc(SO_BLOCK_SIZE * sizeof(char*));
 
     /*
@@ -147,35 +150,31 @@ int main(int argc, char *argv[])
             for(tpi = 0;tpi <= SO_TP_SIZE-1;tpi++){
                 
                 /*reciver coda di messaggi*/  
-                msgrcv(msg_id, &message,MSG_SIZE,getpid(),0);  
-
-                /*passo la transazione alla transaction-pool*/
-                transaction_pool[tpi] = message.msg_text;
-
-                if (tpi >= SO_BLOCK_SIZE-2 ){
-                    /*blocco transazioni*/
-                    for(btj = 0 ; btj <= SO_BLOCK_SIZE-2 ;btj++ ){
-                    block_transaction[btj]=transaction_pool[tpi];
-                    printf("block_transaction[%d",btj);
-                    printf("] = %s\n",block_transaction[btj]);
-                    /*Calcolo la somma dei reward e creo la transazione*/
-                    som_reward += take_reward(block_transaction[btj]);
-
-                    if (btj == SO_BLOCK_SIZE-2){
-                        block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
-                        /*Simulazione elaborazione in nanosecondi*/
-                        te.tv_sec = 0;
-                        te.tv_nsec = get_attesa(SO_MAX_TRANS_PROC_NSEC,SO_MIN_TRANS_PROC_NSEC);
-                        nanosleep(&ts,NULL);
-                        som_reward = 0; 
-                        }
-                    }
-                }
+                msgrcv(msg_id, &message,MSG_SIZE,getpid(),0); 
                 
-            }
-            
-            
+                /*blocco transazioni*/
+                block_transaction[tpi]=message.msg_text;
+                
+                /*Calcolo la somma dei reward e creo la transazione*/
+                som_reward += take_reward(block_transaction[tpi]);
+                if (tpi == SO_BLOCK_SIZE-2){
+                    block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
 
+                    /*Simulazione elaborazione in nanosecondi*/
+                    te.tv_sec = 0;
+                    te.tv_nsec = get_attesa(SO_MAX_TRANS_PROC_NSEC,SO_MIN_TRANS_PROC_NSEC);
+                    nanosleep(&ts,NULL);
+
+                    /*Mando il blocco transazioni al libro mastro*/
+
+                    /*calcolo bilancio del nodo*/
+                    som_rew_tot += som_reward;
+                    /*printf("Il bilancio del nodo %d e' %ld\n",getpid(),som_rew_tot);*/
+                    som_reward = 1; 
+                    tpi = 0;
+                }                
+            }
+                
             exit(0);
         default:
 			array_nodi[nodi]=pid_nod;
@@ -318,7 +317,6 @@ int main(int argc, char *argv[])
 	semctl(sem_id,0,IPC_RMID);
 
     msgctl(msg_id, IPC_RMID, NULL); 
-    free(transaction_pool);
     free(block_transaction);
 
     return 0;

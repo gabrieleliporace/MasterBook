@@ -14,7 +14,7 @@
 #include <errno.h>
 #include <time.h>
 #include <semaphore.h>
-#define MSG_SIZE 8242
+#define MSG_SIZE 8192
 #define TEST_ERROR    if (errno) {dprintf(2, \
 					   "%s:%d: PID=%5d: Error %d (%s)\n",\
 					   __FILE__,\
@@ -33,6 +33,7 @@
 #define MSG_KEY 0x229729
 #define SHDM_UTENTI 0x040622
 #define SHDM_NODI 0x070622
+#define SHDM_MASTRO 0x080622
 
 /* dichiarazione di variabili globali*/
 int SO_USERS_NUM, SO_NODES_NUM, SO_BUDGET_INIT, SO_REWARD;
