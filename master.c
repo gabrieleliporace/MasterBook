@@ -99,10 +99,11 @@ int main(int argc, char *argv[])
     }
 
     /* creazione di semaforo per la sincronizzazione dei processi */
-	sem_id=semget(SEM_KEY,3,IPC_CREAT|0600);
+	sem_id=semget(SEM_KEY,4,IPC_CREAT|0600);
 	semctl(sem_id,0,SETVAL,0);
 	semctl(sem_id,1,SETVAL,0);
 	semctl(sem_id,2,SETVAL,0);
+    semctl(sem_id,3,SETVAL,0);
 
     /*Creazione memoria condivisa nodi e utenti e mastro*/
     shm_utenti=shmget(SHDM_UTENTI,SO_USERS_NUM*sizeof(*array_utenti),IPC_CREAT|0600);
@@ -152,6 +153,11 @@ int main(int argc, char *argv[])
             sops.sem_op=1;
             semop(sem_id,&sops,1);
 
+            sops.sem_num = 3;
+            sops.sem_op = -1;
+            sops.sem_flg = 0;
+            semop(sem_id,&sops,1)
+
             for(tpi = 0;tpi <= SO_BLOCK_SIZE-2;tpi++){
 
                 if(master->registro==20){exit(-1);}
@@ -174,6 +180,11 @@ int main(int argc, char *argv[])
                     som_reward = 1; 
                     tpi =0;
                     master->registro++;
+
+                    sops.sem_num = 3;
+                    sops.sem_op = -1;
+                    sops.sem_flg = 0;
+                    semop(sem_id,&sops,1)
                     
                 } 
 
