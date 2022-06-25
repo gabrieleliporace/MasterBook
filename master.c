@@ -99,10 +99,11 @@ int main(int argc, char *argv[])
     }
 
     /* creazione di semaforo per la sincronizzazione dei processi */
-	sem_id=semget(SEM_KEY,3,IPC_CREAT|0600);
+	sem_id=semget(SEM_KEY,4,IPC_CREAT|0600);
 	semctl(sem_id,0,SETVAL,0);
 	semctl(sem_id,1,SETVAL,0);
 	semctl(sem_id,2,SETVAL,0);
+	semctl(sem_id,3,SETVAL,1);
 
     /*Creazione memoria condivisa nodi e utenti e mastro*/
     shm_utenti=shmget(SHDM_UTENTI,SO_USERS_NUM*sizeof(*array_utenti),IPC_CREAT|0600);
@@ -153,12 +154,31 @@ int main(int argc, char *argv[])
             sops.sem_op=1;
             semop(sem_id,&sops,1);
 
-            for(tpi = 0;tpi <= SO_TP_SIZE-1;tpi++){
+            /*for(tpi = 0;tpi <= SO_BLOCK_SIZE-2;tpi++){*/
+            tpi=0;
+            while(1){
 
                 if(master->registro==20){exit(-1);}
 
+                /*reciver coda di messaggi*/  
+                msgrcv(msg_id, &message,MSG_SIZE,getpid(),0); 
+                
+                /*blocco transazioni*/
+                block_transaction[tpi]=message.msg_text;
+                
+                /*Mando transazioni al libro Mastro*/
+                /*master->mastro[master->registro]=block_transaction[tpi];*/
+                som_reward += take_reward(block_transaction[tpi]);
+                /*block_transaction[tpi]="/0";*/
+                tpi++;
+                /*printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);*/  
+
                 if (tpi == SO_BLOCK_SIZE-2){
                     block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
+                    sops.sem_num=3;
+                    sops.sem_op=-1;
+                    semop(sem_id,&sops,1);
+                    for(tpi = SO_BLOCK_SIZE-1;tpi == 0;tpi--){
                     master->mastro[master->registro]=block_transaction[SO_BLOCK_SIZE-1];
                     printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);
 
@@ -169,25 +189,17 @@ int main(int argc, char *argv[])
                         
                     /*calcolo bilancio del nodo*/
                     som_rew_tot += som_reward;
+                    som_reward = 1; 
                     /*printf("Il bilancio del nodo %d e' %ld\n",getpid(),som_rew_tot);*/
 
-                    som_reward = 1; 
-                    tpi =0;
+                    semop(sem_id,&sops,1);
                     master->registro++;
+                    }
                     
+                    sops.sem_num=3;
+                    sops.sem_op=1;
+                    semop(sem_id,&sops,1);
                 } 
-
-                /*reciver coda di messaggi*/  
-                msgrcv(msg_id, &message,MSG_SIZE,getpid(),0); 
-                
-                /*blocco transazioni*/
-                block_transaction[tpi]=message.msg_text;
-                
-                /*Mando transazioni al libro Mastro*/
-                master->mastro[master->registro]=block_transaction[tpi];
-                som_reward += take_reward(block_transaction[tpi]);
-                block_transaction[tpi]="/0";
-                printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);  
                
             }
             
@@ -199,10 +211,6 @@ int main(int argc, char *argv[])
             break;
         }
     }
-
-    sops.sem_num=3;	
-    sops.sem_op=-1;
-    semop(sem_id,&sops,1);
 
     /*
     Creazione processi utente con fork()
