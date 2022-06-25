@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 	semctl(sem_id,0,SETVAL,0);
 	semctl(sem_id,1,SETVAL,0);
 	semctl(sem_id,2,SETVAL,0);
-	semctl(sem_id,3,SETVAL,1);
+    semctl(sem_id,3,SETVAL,1);
 
     /*Creazione memoria condivisa nodi e utenti e mastro*/
     shm_utenti=shmget(SHDM_UTENTI,SO_USERS_NUM*sizeof(*array_utenti),IPC_CREAT|0600);
@@ -121,7 +121,6 @@ int main(int argc, char *argv[])
     shmctl(shm_nodi,IPC_RMID,NULL);
     shmctl(shared_mastro,IPC_RMID,NULL);
     
-
     miopid=getpid();
     sops.sem_flg=0;
 
@@ -142,7 +141,7 @@ int main(int argc, char *argv[])
 
             alarm(SO_SIM_SEC);
 
-            master=shmat(shared_mastro,NULL,0);
+
 
             /*Semaforo per inizializzazione array_nodi*/
             sops.sem_num=1;	
@@ -154,31 +153,18 @@ int main(int argc, char *argv[])
             sops.sem_op=1;
             semop(sem_id,&sops,1);
 
-            /*for(tpi = 0;tpi <= SO_BLOCK_SIZE-2;tpi++){*/
-            tpi=0;
-            while(1){
+            sops.sem_num = 3;
+            sops.sem_op = -1;
+            sops.sem_flg = 0;
+            semop(sem_id,&sops,1);
+
+            for(tpi = 0;tpi <= SO_BLOCK_SIZE-2;tpi++){
 
                 if(master->registro==20){exit(-1);}
 
-                /*reciver coda di messaggi*/  
-                msgrcv(msg_id, &message,MSG_SIZE,getpid(),0); 
-                
-                /*blocco transazioni*/
-                block_transaction[tpi]=message.msg_text;
-                
-                /*Mando transazioni al libro Mastro*/
-                /*master->mastro[master->registro]=block_transaction[tpi];*/
-                som_reward += take_reward(block_transaction[tpi]);
-                /*block_transaction[tpi]="/0";*/
-                tpi++;
-                /*printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);*/  
-
+                /*creo transazione reward*/
                 if (tpi == SO_BLOCK_SIZE-2){
                     block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
-                    sops.sem_num=3;
-                    sops.sem_op=-1;
-                    semop(sem_id,&sops,1);
-                    for(tpi = SO_BLOCK_SIZE-1;tpi == 0;tpi--){
                     master->mastro[master->registro]=block_transaction[SO_BLOCK_SIZE-1];
                     printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);
 
@@ -189,17 +175,30 @@ int main(int argc, char *argv[])
                         
                     /*calcolo bilancio del nodo*/
                     som_rew_tot += som_reward;
-                    som_reward = 1; 
                     /*printf("Il bilancio del nodo %d e' %ld\n",getpid(),som_rew_tot);*/
 
-                    semop(sem_id,&sops,1);
+                    som_reward = 1; 
+                    tpi =0;
                     master->registro++;
-                    }
-                    
-                    sops.sem_num=3;
-                    sops.sem_op=1;
+
+                    sops.sem_num = 3;
+                    sops.sem_op = -1;
+                    sops.sem_flg = 0;
                     semop(sem_id,&sops,1);
+                    
                 } 
+
+                /*reciver coda di messaggi*/  
+                msgrcv(msg_id, &message,MSG_SIZE,getpid(),0); 
+                
+                /*blocco transazioni*/
+                block_transaction[tpi]=message.msg_text;
+                
+                /*Mando transazioni al libro Mastro*/
+                master->mastro[master->registro]=block_transaction[tpi];
+                som_reward += take_reward(block_transaction[tpi]);
+                block_transaction[tpi]="/0";
+                printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);  
                
             }
             
@@ -225,7 +224,6 @@ int main(int argc, char *argv[])
             /*La funzione free() dealloca il bloccco di memoria preallocato dalla malloc*/
             alarm(SO_SIM_SEC);
 
-            master=shmat(shared_mastro,NULL,0);
 
             /*Semaforo per inizializzazione array_utenti*/
             sops.sem_num=0;	
