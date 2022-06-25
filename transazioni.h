@@ -53,4 +53,8 @@ long get_reward(char * transaction);
 /* Recupera dalla stringa della transazione il valore quantity*/
 long get_quantity(pid_t miopid, char * transaction);
 
+long get_sender(char * transaction);
+
+long get_receiver(char * transaction);
+
 #endif

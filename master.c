@@ -27,6 +27,7 @@ int get_casual_pid(pid_t * array,int un){
     rec = rand() % un;
     pid = array[rec];
     return pid;
+    
 }  
 
 int  inizializzazione_valori()
@@ -52,6 +53,8 @@ int  inizializzazione_valori()
 
     fclose(masterbook_init);
 }
+
+
 /*inizio main*/
 int main(int argc, char *argv[])
 { 
@@ -62,16 +65,16 @@ int main(int argc, char *argv[])
     int utenti,count,status;
     int sender,receiver,rec;
     int shm_utenti,shm_nodi;
+    int entrate,uscite,contatore;
     long t_attesa,bilancio;
     char * transaction,nod_transaction;
 
-    /*dichiarazioni per processi nodo*/   
+    /*dichiarazioni per processi nodo*/  
+    struct master * master;
     pid_t * array_nodi,pid_nod;
     int nodi,casual_nod,numnodi; 
-    int tpi,btj,tpj;
-    long som_reward,som_rew_tot; 
-    int shm_mastro;
-    char *mastro;
+    int tpi,tpj,shared_mastro,shared_registro;
+    long som_reward,som_rew_tot;
     char **block_transaction;
 
     /*dichiarazioni varie*/ 
@@ -104,24 +107,25 @@ int main(int argc, char *argv[])
     /*Creazione memoria condivisa nodi e utenti e mastro*/
     shm_utenti=shmget(SHDM_UTENTI,SO_USERS_NUM*sizeof(*array_utenti),IPC_CREAT|0600);
     shm_nodi=shmget(SHDM_NODI,SO_NODES_NUM*sizeof(*array_nodi),IPC_CREAT|0600);
-    shm_mastro=shmget(SHDM_MASTRO,sizeof(char)*SO_BLOCK_SIZE*SO_REGISTRY_SIZE, IPC_CREAT | 0600);
+    shared_mastro=shmget(SHDM_MASTRO,sizeof(master),IPC_CREAT|0600);
 
     /*Dichiarazione array per PID utenti e PID nodi*/
     array_utenti=shmat(shm_utenti,NULL,0);
     array_nodi=shmat(shm_nodi,NULL,0);
-    mastro=shmat(shm_mastro,NULL,0);
+    master=shmat(shared_mastro,NULL,0);
 
     /*Marchio la shared memory come pronta per la rimozione, 
       viene rimossa quando tutti i processi si sono staccati*/
     shmctl(shm_utenti,IPC_RMID,NULL);
     shmctl(shm_nodi,IPC_RMID,NULL);
-    shmctl(shm_mastro,IPC_RMID,NULL);
+    shmctl(shared_mastro,IPC_RMID,NULL);
+    
 
     miopid=getpid();
     sops.sem_flg=0;
 
     /*malloc per transaction_block*/
-    block_transaction = malloc(SO_BLOCK_SIZE * sizeof(char*));
+    block_transaction = malloc(SO_BLOCK_SIZE*sizeof(char*));
 
     /*
     creo i processi nodo con fork()
@@ -137,7 +141,9 @@ int main(int argc, char *argv[])
 
             alarm(SO_SIM_SEC);
 
-            /*Semaforo per inizializzazione array_utenti*/
+            master=shmat(shared_mastro,NULL,0);
+
+            /*Semaforo per inizializzazione array_nodi*/
             sops.sem_num=1;	
             sops.sem_op=1;
             semop(sem_id,&sops,1);
@@ -148,39 +154,55 @@ int main(int argc, char *argv[])
             semop(sem_id,&sops,1);
 
             for(tpi = 0;tpi <= SO_TP_SIZE-1;tpi++){
-                
+
+                if(master->registro==20){exit(-1);}
+
+                if (tpi == SO_BLOCK_SIZE-2){
+                    block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
+                    master->mastro[master->registro]=block_transaction[SO_BLOCK_SIZE-1];
+                    printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);
+
+                    /*Simulazione elaborazione in nanosecondi*/
+                    te.tv_sec = 0;
+                    te.tv_nsec = get_attesa(SO_MAX_TRANS_PROC_NSEC,SO_MIN_TRANS_PROC_NSEC);
+                    nanosleep(&ts,NULL);
+                        
+                    /*calcolo bilancio del nodo*/
+                    som_rew_tot += som_reward;
+                    /*printf("Il bilancio del nodo %d e' %ld\n",getpid(),som_rew_tot);*/
+
+                    som_reward = 1; 
+                    tpi =0;
+                    master->registro++;
+                    
+                } 
+
                 /*reciver coda di messaggi*/  
                 msgrcv(msg_id, &message,MSG_SIZE,getpid(),0); 
                 
                 /*blocco transazioni*/
                 block_transaction[tpi]=message.msg_text;
                 
-                /*Calcolo la somma dei reward e creo la transazione*/
+                /*Mando transazioni al libro Mastro*/
+                master->mastro[master->registro]=block_transaction[tpi];
                 som_reward += take_reward(block_transaction[tpi]);
-                if (tpi == SO_BLOCK_SIZE-2){
-                    block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
-
-                    /*Simulazione elaborazione in nanosecondi*/
-                    te.tv_sec = 0;
-                    te.tv_nsec = get_attesa(SO_MAX_TRANS_PROC_NSEC,SO_MIN_TRANS_PROC_NSEC);
-                    nanosleep(&ts,NULL);
-
-                    /*Mando il blocco transazioni al libro mastro*/
-
-                    /*calcolo bilancio del nodo*/
-                    som_rew_tot += som_reward;
-                    /*printf("Il bilancio del nodo %d e' %ld\n",getpid(),som_rew_tot);*/
-                    som_reward = 1; 
-                    tpi = 0;
-                }                
+                block_transaction[tpi]="/0";
+                printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);  
+               
             }
-                
+            
+
             exit(0);
         default:
 			array_nodi[nodi]=pid_nod;
+
             break;
         }
     }
+
+    sops.sem_num=3;	
+    sops.sem_op=-1;
+    semop(sem_id,&sops,1);
 
     /*
     Creazione processi utente con fork()
@@ -194,6 +216,8 @@ int main(int argc, char *argv[])
           case 0:
             /*La funzione free() dealloca il bloccco di memoria preallocato dalla malloc*/
             alarm(SO_SIM_SEC);
+
+            master=shmat(shared_mastro,NULL,0);
 
             /*Semaforo per inizializzazione array_utenti*/
             sops.sem_num=0;	
@@ -209,7 +233,8 @@ int main(int argc, char *argv[])
             numnodi=SO_NODES_NUM;
             myretry=SO_RETRY;
             while(myretry){
-            /*bilancio = get_balance(SO_BUDGET_INIT);*/
+            
+            /*Calcolo del bilancio*/
 
 #ifdef BIL
                 bilancio = 2;
@@ -224,8 +249,8 @@ int main(int argc, char *argv[])
                     casual_nod = get_casual_pid(array_nodi,numnodi);
                     do{
                     receiver = get_casual_pid(array_utenti,utenti);
-                    }while(receiver==0);
                     
+                    }while(receiver==0);
 
                     /*creo la transazione*/
                     transaction = creazione_transazione(SO_REWARD,bilancio,receiver,sender);
@@ -243,6 +268,8 @@ int main(int argc, char *argv[])
                     ts.tv_sec = 0;
                     ts.tv_nsec = get_attesa(SO_MAX_TRANS_GEN_NSEC,SO_MIN_TRANS_GEN_NSEC);
                     nanosleep(&ts,NULL);
+
+                    
                 
                 sleep(1);
                 }else if(bilancio < 2){
@@ -307,7 +334,7 @@ int main(int argc, char *argv[])
         }
         printf("processo terminato: %d , %d, %d , %d\n", WIFEXITED(status), WIFSIGNALED(status), u, vivi);
     }
-    
+
     sigaction(SIGTERM,&sa,NULL);
     printf("nodi %d\n", nodi);
     printf("miopid %d\n", getpid());
@@ -321,3 +348,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+

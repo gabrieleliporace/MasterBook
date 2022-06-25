@@ -81,7 +81,7 @@ long get_reward(char * transaction)
     }
 }
 
-/*long get_receiver(char * transaction)
+long get_receiver(char * transaction)
 {
     const char sup='>';
     const char sep=',';
@@ -100,7 +100,7 @@ long get_reward(char * transaction)
         prev=sep_at+1;
     }
     return atol(prev);
-}*/
+}      
 
 /*
  * recupera dalla stringa della transazione il processo sender

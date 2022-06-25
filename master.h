@@ -2,6 +2,7 @@
 #define _MASTER_H
 
 #define _GNU_SOURCE 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -34,6 +35,7 @@
 #define SHDM_UTENTI 0x040622
 #define SHDM_NODI 0x070622
 #define SHDM_MASTRO 0x080622
+#define SHDM_REGISTRO 0x080620
 
 /* dichiarazione di variabili globali*/
 int SO_USERS_NUM, SO_NODES_NUM, SO_BUDGET_INIT, SO_REWARD;
@@ -42,12 +44,19 @@ int SO_MIN_TRANS_PROC_NSEC,SO_MAX_TRANS_PROC_NSEC,SO_SIM_SEC;
 int i = 1;
 
 /*coda di messaggi*/
-
 struct mesg_buffer
 {
     long pid_nod_type;
     char msg_text[MSG_SIZE];
 }message;
+
+/**/
+struct master
+{
+	unsigned long registro;
+	char *mastro[SO_BLOCK_SIZE*SO_REGISTRY_SIZE];
+};
+
 
 
 int inizializzazione_valori(); /*Legge i valori dal file init e li assegna*/
