@@ -120,7 +120,6 @@ int main(int argc, char *argv[])
     shmctl(shm_nodi,IPC_RMID,NULL);
     shmctl(shared_mastro,IPC_RMID,NULL);
     
-
     miopid=getpid();
     sops.sem_flg=0;
 
@@ -141,7 +140,7 @@ int main(int argc, char *argv[])
 
             alarm(SO_SIM_SEC);
 
-            master=shmat(shared_mastro,NULL,0);
+
 
             /*Semaforo per inizializzazione array_nodi*/
             sops.sem_num=1;	
@@ -153,10 +152,11 @@ int main(int argc, char *argv[])
             sops.sem_op=1;
             semop(sem_id,&sops,1);
 
-            for(tpi = 0;tpi <= SO_TP_SIZE-1;tpi++){
+            for(tpi = 0;tpi <= SO_BLOCK_SIZE-2;tpi++){
 
                 if(master->registro==20){exit(-1);}
 
+                /*creo transazione reward*/
                 if (tpi == SO_BLOCK_SIZE-2){
                     block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
                     master->mastro[master->registro]=block_transaction[SO_BLOCK_SIZE-1];
@@ -200,10 +200,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    sops.sem_num=3;	
-    sops.sem_op=-1;
-    semop(sem_id,&sops,1);
-
     /*
     Creazione processi utente con fork()
     */
@@ -217,7 +213,6 @@ int main(int argc, char *argv[])
             /*La funzione free() dealloca il bloccco di memoria preallocato dalla malloc*/
             alarm(SO_SIM_SEC);
 
-            master=shmat(shared_mastro,NULL,0);
 
             /*Semaforo per inizializzazione array_utenti*/
             sops.sem_num=0;	
