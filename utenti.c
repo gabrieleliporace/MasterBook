@@ -14,7 +14,7 @@ int get_balance(int b_i){
 int val_transazione(int bilancio){
     int n;
     struct timespec spec;
-    clock_gettime(CLOCK_REALTIME,&spec); /*prendo il timestemp attuale*/
+    clock_gettime(CLOCK_REALTIME,&spec); /*prendo il timestamp attuale*/
     srand(spec.tv_nsec);
     n = rand() % bilancio + 2; /*estrae un valore casuale per la transazione*/
     return n;

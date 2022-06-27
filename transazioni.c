@@ -75,7 +75,6 @@ long get_reward(char * transaction)
     char * last;
     char * const sep_at=strrchr(transaction,sep);
     if(sep_at!=NULL){
-        /**sep_at='\0';*/
         last=sep_at+1;
         return atol(last);
     }
