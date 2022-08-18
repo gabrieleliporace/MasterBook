@@ -17,9 +17,10 @@
 /* 
  *Definizione metodi
  */
-int get_balance(int b_i);
+long get_quantity(pid_t miopid,char *transaction);
 char * creazione_transazione(int reward,long bilancio,int reciver,int sender);
 long get_attesa (int tmax,int tmin);
+long quantiti(pid_t miopid,char *transa);
 
 
 
