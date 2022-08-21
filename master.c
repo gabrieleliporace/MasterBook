@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
                 /*sops.sem_num = 4;
                 sops.sem_op = 0;
                 sops.sem_flg = 0;
-                semop(sem_id,&sops,1);
+                semop(sem_id,&sops,1);*/
 
                 if(master->registro>=0){
                     while(contatore <= master->registro){
@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
                     }
                 }
 
-                sops.sem_num = 4;
+                /*sops.sem_num = 4;
                 sops.sem_op = 0;
                 sops.sem_flg = 0;
                 semop(sem_id,&sops,1);*/
@@ -314,8 +314,8 @@ bilancio insufficiente\n");
                     /*creo la transazione*/
                     transaction = creazione_transazione(SO_REWARD,bilancio,receiver,sender);
 
-                    bilancio_utente += get_quantity(getpid(),transaction);
-                    printf("Il bilancio utente e': %ld\n",bilancio_utente);
+                    /*bilancio_utente += get_quantity(sender,transaction);
+                    printf("Il bilancio utente e': %ld\n",bilancio_utente);*/
                 
                     /*coda di messaggi*/
                     message.pid_nod_type = casual_nod;

@@ -14,7 +14,7 @@ long get_quantity(pid_t miopid,char * transaction){
     const char sep='>';
     const char sip=',';
     char * last,* sep_it,* sep_at;
-    trans=malloc(sizeof(transaction));
+    trans = malloc(sizeof(transaction)*200);
     strcpy(trans,transaction);
     shortened=shrink(trans);
     sep_at=strrchr(transaction,sep);
