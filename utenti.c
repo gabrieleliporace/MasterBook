@@ -104,4 +104,3 @@ char * creazione_transazione(int reward,long bilancio,int reciver,int sender){
     return T;
     
 }
-

@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 
             for(tpi = 0;tpi <= SO_BLOCK_SIZE-2;tpi++){
 
-                if(master->registro==SO_REGISTRY_SIZE){
+                if(master->registro==1){
                     printf("Processo terminato causa: Master pieno.");
                     exit(-1);
                     }
@@ -182,12 +182,12 @@ int main(int argc, char *argv[])
                 master->mastro[master->registro]=block_transaction[tpi];
                 som_reward += take_reward(block_transaction[tpi]);
                 block_transaction[tpi]="/0";
-                /*printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);*/
+                printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);
 
                 if (tpi == SO_BLOCK_SIZE-2){
                     block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
                     master->mastro[master->registro]=block_transaction[SO_BLOCK_SIZE-1];
-                    /*printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);*/
+                    printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);
 
                     /*Simulazione elaborazione in nanosecondi*/
                     te.tv_sec = 0;
@@ -247,11 +247,11 @@ int main(int argc, char *argv[])
 
             while(myretry){
 
-                while(contatore <= master->registro){
+                /*while(contatore <= master->registro){
                 bilancio += get_quantity(getpid(),master->mastro[contatore]);
                 printf("Il bilancio dell'utente %d e': %ld\n",getpid(),bilancio);
                 contatore++;
-                }
+                }*/
                 
                 if(invio){
                     if(bilancio>=2){
@@ -396,4 +396,3 @@ bilancio insufficiente\n");
 
     return 0;
 }
-
