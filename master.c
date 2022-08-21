@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     int utenti,count,status;
     int sender,receiver,rec;
     int shm_utenti,shm_nodi;
-    long t_attesa,bilancio,bilancio_mastro;
+    long t_attesa,bilancio,bilancio_utente;
     char * transaction,nod_transaction;
     char * transaction_bi;
 
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
             for(tpi = 0;tpi <= SO_BLOCK_SIZE-2;tpi++){
 
                 if(master->registro==SO_REGISTRY_SIZE){
-                    printf("Processo terminato causa: Master pieno.");
+                    printf("Processo terminato causa: Libro Mastro pieno.");
                     exit(-1);
                     }
 
@@ -248,21 +248,23 @@ int main(int argc, char *argv[])
 
             while(myretry){
 
-                sops.sem_num = 4;
-                sops.sem_op = -1;
+                /*sops.sem_num = 4;
+                sops.sem_op = 0;
                 sops.sem_flg = 0;
                 semop(sem_id,&sops,1);
 
-                while(contatore <= master->registro){
-                bilancio += get_quantity(getpid(),master->mastro[contatore]);
-                printf("Il bilancio dell'utente %d e': %ld\n",getpid(),bilancio);
-                contatore++;
+                if(master->registro>=0){
+                    while(contatore <= master->registro){
+                    bilancio += get_quantity(getpid(),master->mastro[contatore]);
+                    printf("Il bilancio dell'utente %d e': %ld\n",getpid(),bilancio);
+                    contatore++;
+                    }
                 }
 
                 sops.sem_num = 4;
-                sops.sem_op = 1;
+                sops.sem_op = 0;
                 sops.sem_flg = 0;
-                semop(sem_id,&sops,1);
+                semop(sem_id,&sops,1);*/
                 
                 if(invio){
                     if(bilancio>=2){
@@ -279,6 +281,9 @@ int main(int argc, char *argv[])
 
                         printf("Invio transazione causa segnale \
 USR1, %s\n", transaction);
+
+                        bilancio_utente += get_quantity(getpid(),transaction);
+                        printf("Il bilancio utente e': %ld\n",bilancio_utente);
 
                         /*coda di messaggi*/
                         message.pid_nod_type = casual_nod;
@@ -308,6 +313,9 @@ bilancio insufficiente\n");
 
                     /*creo la transazione*/
                     transaction = creazione_transazione(SO_REWARD,bilancio,receiver,sender);
+
+                    bilancio_utente += get_quantity(getpid(),transaction);
+                    printf("Il bilancio utente e': %ld\n",bilancio_utente);
                 
                     /*coda di messaggi*/
                     message.pid_nod_type = casual_nod;
