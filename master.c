@@ -183,12 +183,12 @@ int main(int argc, char *argv[])
                 master->mastro[master->registro]=block_transaction[tpi];
                 som_reward += take_reward(block_transaction[tpi]);
                 block_transaction[tpi]="/0";
-                /*printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);*/
+                printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);
 
                 if (tpi == SO_BLOCK_SIZE-2){
                     block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
                     master->mastro[master->registro]=block_transaction[SO_BLOCK_SIZE-1];
-                    /*printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);*/
+                    printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);
 
                     /*Simulazione elaborazione in nanosecondi*/
                     te.tv_sec = 0;
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
                 /*sops.sem_num = 4;
                 sops.sem_op = 0;
                 sops.sem_flg = 0;
-                semop(sem_id,&sops,1);*/
+                semop(sem_id,&sops,1);
 
                 if(master->registro>=0){
                     while(contatore <= master->registro){
@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
                     }
                 }
 
-                /*sops.sem_num = 4;
+                sops.sem_num = 4;
                 sops.sem_op = 0;
                 sops.sem_flg = 0;
                 semop(sem_id,&sops,1);*/
