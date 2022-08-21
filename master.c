@@ -67,9 +67,9 @@ int main(int argc, char *argv[])
     int utenti,count,status;
     int sender,receiver,rec;
     int shm_utenti,shm_nodi;
-    int entrate,uscite,contatore;
-    long t_attesa,bilancio;
+    long t_attesa,bilancio,bilancio_utente;
     char * transaction,nod_transaction;
+    char * transaction_bi;
 
     /*dichiarazioni per processi nodo*/  
     struct master * master;
@@ -103,17 +103,18 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    /* creazione di semaforo per la sincronizzazione dei processi */
-	sem_id=semget(SEM_KEY,4,IPC_CREAT|0600);
+    /* creazione di semafori per la sincronizzazione dei processi */
+	sem_id=semget(SEM_KEY,5,IPC_CREAT|0600);
 	semctl(sem_id,0,SETVAL,0);
 	semctl(sem_id,1,SETVAL,0);
 	semctl(sem_id,2,SETVAL,0);
     semctl(sem_id,3,SETVAL,1);
+    semctl(sem_id,4,SETVAL,1);
 
     /*Creazione memoria condivisa nodi e utenti e mastro*/
     shm_utenti=shmget(SHDM_UTENTI,SO_USERS_NUM*sizeof(*array_utenti),IPC_CREAT|0600);
     shm_nodi=shmget(SHDM_NODI,SO_NODES_NUM*sizeof(*array_nodi),IPC_CREAT|0600);
-    shared_mastro=shmget(SHDM_MASTRO,sizeof(master),IPC_CREAT|0600);
+    shared_mastro=shmget(SHDM_MASTRO,sizeof(master->mastro),IPC_CREAT|0600);
 
     /*Dichiarazione array per PID utenti e PID nodi*/
     array_utenti=shmat(shm_utenti,NULL,0);
@@ -132,6 +133,8 @@ int main(int argc, char *argv[])
     /*malloc per transaction_block*/
     block_transaction = malloc(SO_BLOCK_SIZE*sizeof(char*));
 
+    bilancio = SO_BUDGET_INIT;
+
     /*
     creo i processi nodo con fork()
     */
@@ -145,8 +148,6 @@ int main(int argc, char *argv[])
         case 0:
 
             alarm(SO_SIM_SEC);
-
-
 
             /*Semaforo per inizializzazione array_nodi*/
             sops.sem_num=1;	
@@ -167,11 +168,10 @@ int main(int argc, char *argv[])
 
             for(tpi = 0;tpi <= SO_BLOCK_SIZE-2;tpi++){
 
-                if(master->registro==20){exit(-1);}
-
-                /*creo transazione reward*/
-                /*se tolgo processo nodo termina*/
-
+                if(master->registro==SO_REGISTRY_SIZE){
+                    printf("Processo terminato causa: Libro Mastro pieno.");
+                    exit(-1);
+                    }
 
                 /*reciver coda di messaggi*/  
                 msgrcv(msg_id, &message,MSG_SIZE,getpid(),0); 
@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
                 master->mastro[master->registro]=block_transaction[tpi];
                 som_reward += take_reward(block_transaction[tpi]);
                 block_transaction[tpi]="/0";
-                printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);  
+                printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);
 
                 if (tpi == SO_BLOCK_SIZE-2){
                     block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
@@ -200,7 +200,6 @@ int main(int argc, char *argv[])
                     /*printf("Il bilancio del nodo %d e' %ld\n",getpid(),som_rew_tot);*/
 
                     som_reward = 1; 
-                    /*tpi =0;*/
                     master->registro++;
 
                     sops.sem_num = 3;
@@ -209,7 +208,7 @@ int main(int argc, char *argv[])
                     semop(sem_id,&sops,1);
                     
                 } 
-            }
+              }
             }
             
             exit(0);
@@ -229,6 +228,7 @@ int main(int argc, char *argv[])
           case -1:
              exit(EXIT_FAILURE);
           case 0:
+
             /*La funzione free() dealloca il bloccco di memoria preallocato dalla malloc*/
             alarm(SO_SIM_SEC);
 
@@ -241,15 +241,31 @@ int main(int argc, char *argv[])
             sops.sem_num=2;
             sops.sem_op=-1;
             semop(sem_id,&sops,1);
-            /*printf("Utente #%d\n",utenti);*/
 
             numutenti=SO_USERS_NUM;
             numnodi=SO_NODES_NUM;
             myretry=SO_RETRY;
+
             while(myretry){
-            
-            /*Calcolo del bilancio*/
-            /*bilancio = get_balance(SO_BUDGET_INIT);*/
+
+                /*sops.sem_num = 4;
+                sops.sem_op = 0;
+                sops.sem_flg = 0;
+                semop(sem_id,&sops,1);*/
+
+                if(master->registro > 0){
+                    while(contatore <= master->registro){
+                    bilancio += get_quantity(getpid(),master->mastro[contatore]);
+                    printf("Il bilancio dell'utente %d e': %ld\n",getpid(),bilancio);
+                    contatore++;
+                    }
+                }
+
+                /*sops.sem_num = 4;
+                sops.sem_op = 0;
+                sops.sem_flg = 0;
+                semop(sem_id,&sops,1);*/
+                
                 if(invio){
                     if(bilancio>=2){
                     
@@ -266,6 +282,9 @@ int main(int argc, char *argv[])
                         printf("Invio transazione causa segnale \
 USR1, %s\n", transaction);
 
+                        bilancio_utente += get_quantity(getpid(),transaction);
+                        printf("Il bilancio utente e': %ld\n",bilancio_utente);
+
                         /*coda di messaggi*/
                         message.pid_nod_type = casual_nod;
                         memset(&(message.msg_text), 0, MSG_SIZE * sizeof(char));
@@ -281,12 +300,8 @@ bilancio insufficiente\n");
                     invio=0;
                     }
 
-#ifdef BIL
-                bilancio = 2;
-#else
-                bilancio = 1;
-#endif
                 if(bilancio >= 2){
+
                     myretry=SO_RETRY;
 
                     /*Estrazione casuale pid nodo e utente*/
@@ -299,6 +314,9 @@ bilancio insufficiente\n");
                     /*creo la transazione*/
                     transaction = creazione_transazione(SO_REWARD,bilancio,receiver,sender);
 
+                    /*bilancio_utente += get_quantity(sender,transaction);
+                    printf("Il bilancio utente e': %ld\n",bilancio_utente);*/
+                
                     /*coda di messaggi*/
                     message.pid_nod_type = casual_nod;
                     memset(&(message.msg_text), 0, MSG_SIZE * sizeof(char));
@@ -317,10 +335,15 @@ bilancio insufficiente\n");
                 ts.tv_sec = 1;
                 ts.tv_nsec = 0;
                 nanosleep(&ts,NULL);
+
                 }else if(bilancio < 2){
                     myretry--;
                     sleep(1);
                 }
+                
+            }
+            if(!myretry){
+                printf("RETRY = 0\n");
             }
 			exit(0);
             break;
@@ -330,9 +353,12 @@ bilancio insufficiente\n");
                 array_utenti[utenti]=pid_user;
 
                 break;
-        }
-    }
 
+              
+        }
+    }   
+
+    
 
     /*Lascio partire gli utenti*/
 	sops.sem_num=0;	
@@ -360,7 +386,7 @@ bilancio insufficiente\n");
     for (count=0; count < utenti; count++){
         printf("utente: %d\n", array_utenti[count]);
     }
-
+    
     while((u=wait(&status)) != -1){
     
         for(count=0; count < utenti; count++){
@@ -379,7 +405,7 @@ bilancio insufficiente\n");
         }
         printf("processo terminato: %d , %d, %d , %d\n", WTERMSIG(status), WIFSIGNALED(status), u, vivi);
     }
-
+    
     sigaction(SIGTERM,&sa,NULL);
     printf("nodi %d\n", nodi);
     printf("miopid %d\n", getpid());
@@ -392,4 +418,3 @@ bilancio insufficiente\n");
 
     return 0;
 }
-

@@ -75,6 +75,7 @@ long get_reward(char * transaction)
     char * last;
     char * const sep_at=strrchr(transaction,sep);
     if(sep_at!=NULL){
+        /**sep_at='\0';*/
         last=sep_at+1;
         return atol(last);
     }
@@ -99,7 +100,7 @@ long get_receiver(char * transaction)
         prev=sep_at+1;
     }
     return atol(prev);
-}
+}      
 
 /*
  * recupera dalla stringa della transazione il processo sender
@@ -109,6 +110,7 @@ long get_sender(char * transaction)
     const char sup=',';
     char * trans;
     char * prev, * sep_ut;
+    prev="";
     trans=transaction;
     sep_ut=strchr(trans,sup);
     if(sep_ut != NULL){
@@ -141,40 +143,3 @@ char * shrink(char * transaction)
     }
     return shrinked;
 }
-
-/*
- * recupera il valore quantity dalla stringa della transazione e
- * lo restituisce positivo se il processo miopid corrisponde al 
- * receiver, mentre lo restituisce negativo se miopid corrisponde al sender
- */
-long get_quantity(pid_t miopid,char * transaction)
-{
-    int i;
-    char * trans;
-    char * shortened;
-    const char sep='>';
-    const char sip=',';
-    char * last,* sep_it,* sep_at;
-    trans=malloc(sizeof(transaction));
-    strcpy(trans,transaction);
-    shortened=shrink(trans);
-    sep_at=strrchr(transaction,sep);
-    if(sep_at!=NULL){
-        last=sep_at;
-    }
-
-    sep_it=strchr(last,sip);
-    if(sep_it!=NULL){
-        *sep_it='\0';
-        last=sep_it+1;
-    }
-
-    i=get_sender(trans);
-
-    if(i==miopid){
-        return -atol(last);
-    }else{
-        return atol(last);
-    }
-
-} 
