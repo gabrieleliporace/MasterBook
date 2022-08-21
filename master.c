@@ -164,6 +164,7 @@ int main(int argc, char *argv[])
             sops.sem_op = -1;
             sops.sem_flg = 0;
             semop(sem_id,&sops,1);
+<<<<<<< HEAD
 
             for(tpi = 0;tpi <= SO_BLOCK_SIZE-2;tpi++){
 
@@ -183,12 +184,36 @@ int main(int argc, char *argv[])
                 som_reward += take_reward(block_transaction[tpi]);
                 block_transaction[tpi]="/0";
                 printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);
+=======
+>>>>>>> e9ec255a7b14c955259ae15bf8549f1ed4b8ea12
+
+            for(tpi = 0;tpi <= SO_BLOCK_SIZE-2;tpi++){
+
+<<<<<<< HEAD
+=======
+                if(master->registro==SO_REGISTRY_SIZE){
+                    printf("Processo terminato causa: Master pieno.");
+                    exit(-1);
+                    }
+
+                /*reciver coda di messaggi*/  
+                msgrcv(msg_id, &message,MSG_SIZE,getpid(),0); 
+                
+                /*blocco transazioni*/
+                block_transaction[tpi]=message.msg_text;
+                
+                /*Mando transazioni al libro Mastro*/
+                master->mastro[master->registro]=block_transaction[tpi];
+                som_reward += take_reward(block_transaction[tpi]);
+                block_transaction[tpi]="/0";
+                /*printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);*/
 
                 if (tpi == SO_BLOCK_SIZE-2){
                     block_transaction[SO_BLOCK_SIZE-1] = transazione_reward(0,som_reward,getpid(),SEND);    
                     master->mastro[master->registro]=block_transaction[SO_BLOCK_SIZE-1];
-                    printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);
+                    /*printf("pid:%d mastro[%ld]: %s\n",getpid(),master->registro,master->mastro[master->registro]);*/
 
+>>>>>>> e9ec255a7b14c955259ae15bf8549f1ed4b8ea12
                     /*Simulazione elaborazione in nanosecondi*/
                     te.tv_sec = 0;
                     te.tv_nsec = get_attesa(SO_MAX_TRANS_PROC_NSEC,SO_MIN_TRANS_PROC_NSEC);
@@ -247,11 +272,19 @@ int main(int argc, char *argv[])
 
             while(myretry){
 
+<<<<<<< HEAD
                 /*while(contatore <= master->registro){
                 bilancio += get_quantity(getpid(),master->mastro[contatore]);
                 printf("Il bilancio dell'utente %d e': %ld\n",getpid(),bilancio);
                 contatore++;
                 }*/
+=======
+                while(contatore <= master->registro){
+                bilancio += get_quantity(getpid(),master->mastro[contatore]);
+                printf("Il bilancio dell'utente %d e': %ld\n",getpid(),bilancio);
+                contatore++;
+                }
+>>>>>>> e9ec255a7b14c955259ae15bf8549f1ed4b8ea12
                 
                 if(invio){
                     if(bilancio>=2){
